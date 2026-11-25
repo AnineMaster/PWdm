@@ -81,7 +81,10 @@ jobs:
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { viewBinding = true }
               lint { checkReleaseBuilds = false; abortOnError = false }
-              packaging { resources.excludes += listOf("META-INF/INDEX.LIST", "META-INF/DEPENDENCIES") }
+              packaging {
+                  jniLibs { useLegacyPackaging = true }
+                  resources.excludes += listOf("META-INF/INDEX.LIST", "META-INF/DEPENDENCIES")
+              }
           }
           dependencies {
               coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
@@ -169,7 +172,7 @@ jobs:
                       <LinearLayout android:orientation="horizontal" android:gravity="center_vertical"
                           android:layout_width="wrap_content" android:layout_height="wrap_content">
                           <Button android:id="@+id/btnVpn" android:text="VPN:OFF" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnAd" android:text="Ad:ON" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
+                          <Button android:id="@+id/btnAd" android:text="Ad:MAX" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Button android:id="@+id/btnSniffed" android:text="Catch(0)" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Button android:id="@+id/btnYtDlp" android:text="Fetch Page" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
@@ -205,22 +208,31 @@ jobs:
                   "outbrain.com", "mgid.com", "criteo.com", "pubmatic.com", "rubiconproject.com",
                   "openx.net", "casalemedia.com", "scorecardresearch.com", "mc.yandex.ru",
                   "tsyndicate.com", "adskeeper.co.uk", "adtng.com", "tsyndicate.net", "acscdn.com",
-                  "histats.com", "amung.us", "bet365", "1xbet", "dafabet", "onclkds.com", "pushub.net"
+                  "histats.com", "amung.us", "bet365", "1xbet", "dafabet", "onclkds.com", "pushub.net",
+                  "revcontent.com", "bidvertiser.com", "infolinks.com", "media.net", "amazon-adsystem.com",
+                  "advertising.com", "moatads.com", "quantserve.com", "chartbeat.com", "mixpanel.com",
+                  "adjust.com", "appsflyer.com", "branch.io", "unityads.unity3d.com", "applovin.com",
+                  "vungle.com", "adcolony.com", "chartboost.com", "ironsrc.com", "inmobi.com",
+                  "onclickperformance.com", "wpadmngr.com", "doodstream", "bidgear.com", "adcash.com",
+                  "adtelligent.com", "smartadserver.com", "teads.tv", "spotxchange.com", "springserve.com"
               )
               private val adPatterns = listOf(
                   "/ads/", "/adserver", "/popunder", "/popup", "vast.xml", "vpaid", "pagead/",
-                  "doubleclick", "adsystem", "banner_", "clicktrack", "track.php?", "prebid"
+                  "doubleclick", "adsystem", "banner_", "clicktrack", "track.php?", "prebid",
+                  "/api/stats/ads", "get_midroll_info", "ad_break", "ptracking", "/adview",
+                  "pop.js", "ads.js", "adblock", "sponsor", "affiliate", "out.php?", "go.php?"
               )
 
               fun isAdUrl(url: String): Boolean {
                   if (!enabled) return false
                   val u = url.lowercase()
                   if (u.contains(".m3u8") || u.contains(".mp4") || u.contains(".mpd") || u.contains(".ts")) {
-                      if (!u.contains("vast") && !u.contains("doubleclick")) return false
+                      if (!u.contains("vast") && !u.contains("doubleclick") && !u.contains("ad_break")) return false
                   }
                   val host = try { Uri.parse(u).host.orEmpty() } catch (_: Exception) { "" }
                   if (adDomains.any { host == it || host.endsWith(".$it") || host.contains(it) }) return true
-                  if (host.startsWith("ads.") || host.startsWith("ad.") || host.startsWith("pop.") || host.startsWith("track.")) return true
+                  if (host.startsWith("ads.") || host.startsWith("ad.") || host.startsWith("pop.") ||
+                      host.startsWith("track.") || host.startsWith("pixel.")) return true
                   return adPatterns.any { u.contains(it) }
               }
 
@@ -335,23 +347,34 @@ jobs:
                   }
                   override fun onPageFinished(view: WebView, url: String) {
                       onUrlChange(url)
+                      val adJs = if (AdBlockEngine.enabled) """
+                          if(!document.getElementById('__nCss')){
+                              const st=document.createElement('style'); st.id='__nCss';
+                              st.textContent='ins.adsbygoogle,[id*="google_ads"],[class*="ad-banner"],[class*="popup"],[id*="popunder"],ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,.ytp-ad-module,.ytp-ad-overlay-container,ytd-companion-slot-renderer{display:none!important;height:0!important;}';
+                              document.head?.appendChild(st);
+                          }
+                          window.open = function(){ return null; };
+                          setInterval(()=>{
+                              document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
+                              document.querySelectorAll('div,ins,aside,section').forEach(d=>{
+                                  const cs=getComputedStyle(d);
+                                  if(parseInt(cs.zIndex)>999 && (cs.position==='fixed'||cs.position==='absolute') && !d.querySelector('video') && d.innerText.length<80 && d.offsetHeight>200) d.remove();
+                              });
+                              document.querySelector('.ytp-ad-skip-button,.ytp-skip-ad-button,.ytp-ad-skip-button-modern')?.click();
+                              const adV=document.querySelector('.ad-showing video');
+                              if(adV && isFinite(adV.duration)){ adV.muted=true; adV.currentTime=adV.duration; }
+                          },900);
+                      """ else ""
                       evaluateJavascript("""
                           (function(){
-                              window.open = function(){ return null; };
+                              $adJs
                               if(window.__nH) return; window.__nH=true;
                               const s=u=>{if(u&&typeof u==='string')NovaSniff.onJsMedia(u,location.href);};
                               const f=window.fetch; window.fetch=function(...a){s(a[0]?.url||a[0]);return f.apply(this,a);};
                               const o=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){s(u);return o.apply(this,arguments);};
                               setInterval(()=>{
-                                  document.querySelectorAll('video,source,iframe').forEach(e=>{
-                                      if(e.tagName!=='IFRAME') s(e.src||e.currentSrc);
-                                  });
-                                  document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
-                                  document.querySelectorAll('div,ins').forEach(d=>{
-                                      const st=getComputedStyle(d);
-                                      if(parseInt(st.zIndex)>9999 && st.position==='fixed' && !d.querySelector('video')) d.remove();
-                                  });
-                              },1500);
+                                  document.querySelectorAll('video,source').forEach(e=>s(e.src||e.currentSrc));
+                              },1800);
                           })();
                       """.trimIndent(), null)
                   }
@@ -378,6 +401,7 @@ jobs:
                           YoutubeDL.getInstance().init(ctx.applicationContext)
                           FFmpeg.getInstance().init(ctx.applicationContext)
                           initDone.complete(Unit)
+                          try { YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.NIGHTLY) } catch (_: Exception) {}
                       } catch (e: Exception) {
                           initDone.completeExceptionally(e)
                       }
@@ -388,7 +412,7 @@ jobs:
 
               suspend fun updateBinary(ctx: Context): String = withContext(Dispatchers.IO) {
                   awaitReady()
-                  val status = YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.STABLE)
+                  val status = YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.NIGHTLY)
                   status?.name ?: "UP_TO_DATE"
               }
 
@@ -400,26 +424,43 @@ jobs:
                   onProgress: (Float, String) -> Unit
               ): File = withContext(Dispatchers.IO) {
                   awaitReady()
-                  val marker = "pwdm_${System.currentTimeMillis()}"
-                  val req = YoutubeDLRequest(url).apply {
-                      addOption("-o", "${outDir.absolutePath}/%(title).60B_${marker}.%(ext)s")
-                      addOption("-f", formatSelector)
-                      addOption("--merge-output-format", "mp4")
-                      addOption("--no-playlist")
-                      addOption("--no-check-certificates")
-                      addOption("-N", "8")
-                      headers.forEach { (k, v) ->
-                          if (k.equals("User-Agent", true) || k.equals("Referer", true) ||
-                              k.equals("Origin", true) || k.equals("Cookie", true)) {
-                              addOption("--add-header", "$k:$v")
+                  val isYt = url.contains("youtube.com", true) || url.contains("youtu.be", true)
+                  val strategies = if (isYt) listOf(
+                      null to formatSelector,
+                      "youtube:player_client=android_vr" to formatSelector,
+                      "youtube:player_client=web_safari" to formatSelector,
+                      "youtube:player_client=android" to "18/b"
+                  ) else listOf(null to formatSelector)
+
+                  var lastErr: Exception? = null
+                  for ((extArg, fmt) in strategies) {
+                      try {
+                          val marker = "pwdm_${System.currentTimeMillis()}"
+                          val req = YoutubeDLRequest(url).apply {
+                              addOption("-o", "${outDir.absolutePath}/%(title).60B_${marker}.%(ext)s")
+                              addOption("-f", fmt)
+                              addOption("--merge-output-format", "mp4")
+                              addOption("--no-playlist")
+                              addOption("--no-check-certificates")
+                              addOption("-N", "8")
+                              if (extArg != null) addOption("--extractor-args", extArg)
+                              headers.forEach { (k, v) ->
+                                  if (k.equals("User-Agent", true) || k.equals("Referer", true) ||
+                                      k.equals("Origin", true) || k.equals("Cookie", true)) {
+                                      addOption("--add-header", "$k:$v")
+                                  }
+                              }
                           }
+                          YoutubeDL.getInstance().execute(req, marker) { prog, eta, line ->
+                              onProgress(prog, "${prog.toInt()}% (${eta}s) ${line.take(40)}")
+                          }
+                          val found = outDir.listFiles()?.firstOrNull { it.name.contains(marker) && it.length() > 0 }
+                          if (found != null) return@withContext found
+                      } catch (e: Exception) {
+                          lastErr = e
                       }
                   }
-                  YoutubeDL.getInstance().execute(req, marker) { prog, eta, line ->
-                      onProgress(prog, "${prog.toInt()}% (${eta}s) ${line.take(40)}")
-                  }
-                  outDir.listFiles()?.firstOrNull { it.name.contains(marker) && it.length() > 0 }
-                      ?: error("Output file not created")
+                  throw lastErr ?: error("Download failed")
               }
           }
           EOF
@@ -563,12 +604,13 @@ jobs:
                   val urls = listOf("https://api.devices.cloudflare.com/v0a2158/reg", "https://api.cloudflareclient.com/v0a2158/reg")
                   var respJson: JSONObject? = null
                   for (u in urls) {
+                      if (respJson != null) continue
                       try {
                           val req = Request.Builder().url(u)
                               .header("User-Agent", "okhttp/3.12.1").header("CF-Client-Version", "a-6.10-2158")
                               .post(payload.toRequestBody("application/json".toMediaType())).build()
-                          client.newCall(req).execute().use { r ->
-                              if (r.isSuccessful) { respJson = JSONObject(r.body!!.string()); break }
+                          respJson = client.newCall(req).execute().use { r ->
+                              if (r.isSuccessful) JSONObject(r.body!!.string()) else null
                           }
                       } catch (_: Exception) {}
                   }
@@ -770,7 +812,6 @@ jobs:
           import com.wireguard.android.backend.GoBackend
           import kotlinx.coroutines.*
           import okhttp3.OkHttpClient
-          import java.io.File
           import java.net.URLEncoder
           import java.util.concurrent.ConcurrentHashMap
           import java.util.concurrent.TimeUnit
@@ -832,7 +873,7 @@ jobs:
 
                   b.btnAd.setOnClickListener {
                       AdBlockEngine.enabled = !AdBlockEngine.enabled
-                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:ON" else "Ad:OFF"
+                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:MAX" else "Ad:OFF"
                   }
                   b.btnVpn.setOnClickListener {
                       val perm = GoBackend.VpnService.prepare(this)
@@ -999,5 +1040,5 @@ jobs:
           TAG="v2.0.${{ github.run_number }}.${{ github.run_attempt }}"
           gh release create "$TAG" dist/*.apk \
             --title "PWdm $TAG" \
-            --notes "arm64-v8a APK most phones ke liye install karein" \
+            --notes "arm64-v8a APK install karein" \
             --latest
