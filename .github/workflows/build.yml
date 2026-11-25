@@ -54,8 +54,8 @@ jobs:
                   applicationId = "com.nova.dm"
                   minSdk = 24
                   targetSdk = 35
-                  versionCode = 2
-                  versionName = "2.0"
+                  versionCode = 3
+                  versionName = "2.1"
               }
               splits {
                   abi {
@@ -106,9 +106,16 @@ jobs:
           cat << 'EOF' > app/proguard-rules.pro
           -keepattributes *Annotation*
           -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+          -keep class org.apache.commons.compress.** { *; }
+          -keep class * implements org.apache.commons.compress.archivers.zip.ZipExtraField { *; }
+          -keep class org.apache.commons.io.** { *; }
           -keep class com.yausername.** { *; }
+          -keep class com.fasterxml.jackson.** { *; }
           -keep class com.wireguard.** { *; }
+          -dontwarn org.apache.commons.compress.**
+          -dontwarn org.apache.commons.io.**
           -dontwarn com.yausername.**
+          -dontwarn com.fasterxml.jackson.**
           -dontwarn com.wireguard.**
           EOF
 
@@ -158,13 +165,13 @@ jobs:
                   android:layout_width="match_parent" android:layout_height="match_parent" android:padding="4dp">
                   <LinearLayout android:orientation="horizontal" android:gravity="center_vertical"
                       android:layout_width="match_parent" android:layout_height="wrap_content">
-                      <Button android:id="@+id/btnBack" android:text="&lt;" android:minWidth="40dp" android:padding="4dp" android:layout_width="40dp" android:layout_height="40dp"/>
-                      <Button android:id="@+id/btnFwd" android:text="&gt;" android:minWidth="40dp" android:padding="4dp" android:layout_width="40dp" android:layout_height="40dp"/>
-                      <Button android:id="@+id/btnReload" android:text="R" android:minWidth="40dp" android:padding="4dp" android:layout_width="40dp" android:layout_height="40dp"/>
-                      <EditText android:id="@+id/urlInput" android:hint="Search or URL / YT" android:imeOptions="actionGo"
+                      <Button android:id="@+id/btnBack" android:text="&lt;" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
+                      <Button android:id="@+id/btnFwd" android:text="&gt;" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
+                      <Button android:id="@+id/btnReload" android:text="R" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
+                      <EditText android:id="@+id/urlInput" android:hint="Search Google / URL / YT" android:imeOptions="actionGo"
                           android:inputType="textUri" android:singleLine="true" android:textSize="13sp"
                           android:layout_weight="1" android:layout_width="0dp" android:layout_height="42dp"/>
-                      <Button android:id="@+id/btnGo" android:text="Go" android:minWidth="48dp" android:padding="4dp" android:layout_width="wrap_content" android:layout_height="40dp"/>
+                      <Button android:id="@+id/btnGo" android:text="Go" android:minWidth="46dp" android:padding="4dp" android:layout_width="wrap_content" android:layout_height="40dp"/>
                   </LinearLayout>
                   <ProgressBar android:id="@+id/pageProgress" style="?android:attr/progressBarStyleHorizontal"
                       android:max="100" android:visibility="gone" android:layout_width="match_parent" android:layout_height="3dp"/>
@@ -173,6 +180,7 @@ jobs:
                           android:layout_width="wrap_content" android:layout_height="wrap_content">
                           <Button android:id="@+id/btnVpn" android:text="VPN:OFF" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Button android:id="@+id/btnAd" android:text="Ad:MAX" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
+                          <Button android:id="@+id/btnDesk" android:text="Mob" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Button android:id="@+id/btnSniffed" android:text="Catch(0)" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Button android:id="@+id/btnYtDlp" android:text="Fetch Page" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
                           <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
@@ -213,7 +221,7 @@ jobs:
                   "advertising.com", "moatads.com", "quantserve.com", "chartbeat.com", "mixpanel.com",
                   "adjust.com", "appsflyer.com", "branch.io", "unityads.unity3d.com", "applovin.com",
                   "vungle.com", "adcolony.com", "chartboost.com", "ironsrc.com", "inmobi.com",
-                  "onclickperformance.com", "wpadmngr.com", "doodstream", "bidgear.com", "adcash.com",
+                  "onclickperformance.com", "wpadmngr.com", "bidgear.com", "adcash.com",
                   "adtelligent.com", "smartadserver.com", "teads.tv", "spotxchange.com", "springserve.com"
               )
               private val adPatterns = listOf(
@@ -255,6 +263,9 @@ jobs:
 
           data class SniffedMedia(val url: String, val mimeHint: String, val headers: Map<String, String>)
 
+          const val MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+          const val DESKTOP_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
           @SuppressLint("SetJavaScriptEnabled")
           fun WebView.setupBrowserAndSniffer(
               progressBar: ProgressBar,
@@ -275,7 +286,7 @@ jobs:
                   setSupportMultipleWindows(true)
                   javaScriptCanOpenWindowsAutomatically = false
                   mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-                  userAgentString = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+                  userAgentString = MOBILE_UA
               }
               CookieManager.getInstance().setAcceptCookie(true)
               CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -327,16 +338,15 @@ jobs:
                       if (AdBlockEngine.enabled && !req.hasGesture() && curHost.isNotEmpty() && curHost != newHost) return true
                       return false
                   }
-                  override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
-                      onUrlChange(url)
-                  }
+                  override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { onUrlChange(url) }
                   override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
                       val u = req.url.toString()
                       if (AdBlockEngine.isAdUrl(u)) return AdBlockEngine.emptyResponse()
                       val l = u.lowercase()
                       val isMedia = l.contains(".m3u8") || l.contains(".mpd") || l.contains(".mp4") ||
                           l.contains(".webm") || l.contains(".mkv") || l.contains("videoplayback") ||
-                          l.contains("/hls/") || l.contains("master.txt") || l.contains("mime=video")
+                          l.contains("/hls/") || l.contains("master.txt") || l.contains("index.m3u8") ||
+                          l.contains("mime=video") || l.contains("/playlist")
                       if (isMedia && !l.endsWith(".ts") && !l.contains("seg-")) {
                           val h = req.requestHeaders.toMutableMap()
                           CookieManager.getInstance().getCookie(u)?.takeIf { it.isNotBlank() }?.let { h["Cookie"] = it }
@@ -390,7 +400,10 @@ jobs:
           import com.yausername.youtubedl_android.YoutubeDL
           import com.yausername.youtubedl_android.YoutubeDLRequest
           import kotlinx.coroutines.*
+          import org.json.JSONObject
           import java.io.File
+
+          data class FetchedFormat(val label: String, val selector: String)
 
           object YtDlpEngine {
               private val initDone = CompletableDeferred<Unit>()
@@ -401,9 +414,9 @@ jobs:
                           YoutubeDL.getInstance().init(ctx.applicationContext)
                           FFmpeg.getInstance().init(ctx.applicationContext)
                           initDone.complete(Unit)
-                          try { YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.NIGHTLY) } catch (_: Exception) {}
-                      } catch (e: Exception) {
-                          initDone.completeExceptionally(e)
+                          try { YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.NIGHTLY) } catch (_: Throwable) {}
+                      } catch (t: Throwable) {
+                          initDone.completeExceptionally(t)
                       }
                   }
               }
@@ -414,6 +427,44 @@ jobs:
                   awaitReady()
                   val status = YoutubeDL.getInstance().updateYoutubeDL(ctx.applicationContext, YoutubeDL.UpdateChannel.NIGHTLY)
                   status?.name ?: "UP_TO_DATE"
+              }
+
+              suspend fun fetchFormats(url: String, headers: Map<String, String>): Pair<String, List<FetchedFormat>> = withContext(Dispatchers.IO) {
+                  awaitReady()
+                  val req = YoutubeDLRequest(url).apply {
+                      addOption("--dump-single-json")
+                      addOption("--no-playlist")
+                      addOption("--no-check-certificates")
+                      headers.forEach { (k, v) ->
+                          if (k.equals("User-Agent", true) || k.equals("Referer", true) ||
+                              k.equals("Origin", true) || k.equals("Cookie", true)) {
+                              addOption("--add-header", "$k:$v")
+                          }
+                      }
+                  }
+                  val out = YoutubeDL.getInstance().execute(req).out
+                  val json = JSONObject(out)
+                  val title = json.optString("title", "Video")
+                  val list = mutableListOf(FetchedFormat("Best Auto (Video+Audio MP4)", "bv*+ba/b"))
+                  val fmts = json.optJSONArray("formats")
+                  val seenHeights = mutableSetOf<Int>()
+                  if (fmts != null) {
+                      for (i in fmts.length() - 1 downTo 0) {
+                          val f = fmts.getJSONObject(i)
+                          val h = f.optInt("height", 0)
+                          val vcodec = f.optString("vcodec", "none")
+                          val acodec = f.optString("acodec", "none")
+                          val fid = f.optString("format_id", "")
+                          if (h > 0 && vcodec != "none" && fid.isNotEmpty() && seenHeights.add(h)) {
+                              val sz = f.optLong("filesize", f.optLong("filesize_approx", 0L))
+                              val mb = if (sz > 0) " (${sz / 1048576}MB)" else ""
+                              val sel = if (acodec == "none") "$fid+ba/b" else fid
+                              list += FetchedFormat("${h}p ${f.optString("ext", "mp4").uppercase()}$mb", sel)
+                          }
+                      }
+                  }
+                  list += FetchedFormat("Audio Only (M4A)", "ba[ext=m4a]/ba/b")
+                  title to list
               }
 
               suspend fun download(
@@ -432,7 +483,7 @@ jobs:
                       "youtube:player_client=android" to "18/b"
                   ) else listOf(null to formatSelector)
 
-                  var lastErr: Exception? = null
+                  var lastErr: Throwable? = null
                   for ((extArg, fmt) in strategies) {
                       try {
                           val marker = "pwdm_${System.currentTimeMillis()}"
@@ -456,8 +507,8 @@ jobs:
                           }
                           val found = outDir.listFiles()?.firstOrNull { it.name.contains(marker) && it.length() > 0 }
                           if (found != null) return@withContext found
-                      } catch (e: Exception) {
-                          lastErr = e
+                      } catch (t: Throwable) {
+                          lastErr = t
                       }
                   }
                   throw lastErr ?: error("Download failed")
@@ -567,11 +618,20 @@ jobs:
           class WarpVpnManager(private val ctx: Context, private val client: OkHttpClient) {
               private val backend = GoBackend(ctx.applicationContext)
               private val prefs = ctx.getSharedPreferences("warp_vpn", Context.MODE_PRIVATE)
+              private val ports = intArrayOf(2408, 500, 4500, 1701)
+              private var portIdx = 0
               var isUp = false; private set
 
               private val tunnel = object : Tunnel {
                   override fun getName() = "PWdmWarp"
                   override fun onStateChange(newState: Tunnel.State) { isUp = (newState == Tunnel.State.UP) }
+              }
+
+              fun currentPort(): Int = ports[portIdx]
+
+              fun cyclePort(): Int {
+                  portIdx = (portIdx + 1) % ports.size
+                  return ports[portIdx]
               }
 
               suspend fun toggle(): Boolean = withContext(Dispatchers.IO) {
@@ -580,9 +640,10 @@ jobs:
                       isUp = false
                       false
                   } else {
-                      val ini = prefs.getString("wg_ini", null) ?: registerWarp().also {
+                      val baseIni = prefs.getString("wg_ini", null) ?: registerWarp().also {
                           prefs.edit().putString("wg_ini", it).apply()
                       }
+                      val ini = baseIni.replace(Regex("Endpoint = .*"), "Endpoint = 162.159.192.1:${ports[portIdx]}")
                       val cfg = Config.parse(ini.byteInputStream())
                       backend.setState(tunnel, Tunnel.State.UP, cfg)
                       isUp = true
@@ -824,6 +885,7 @@ jobs:
               private val hls = HlsEngine(client)
               private val caught = ConcurrentHashMap<String, SniffedMedia>()
               private var driveToken: String? = null
+              private var desktopMode = false
 
               private val driveLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
                   if (res.resultCode == Activity.RESULT_OK && res.data != null) {
@@ -842,7 +904,7 @@ jobs:
                   YtDlpEngine.initAsync(this)
                   lifecycleScope.launch {
                       try { YtDlpEngine.awaitReady(); b.statusText.text = "Ready (yt-dlp + FFmpeg)" }
-                      catch (e: Exception) { b.statusText.text = "Init err: ${e.message}" }
+                      catch (t: Throwable) { b.statusText.text = "Init err: ${t.message}" }
                   }
 
                   b.webView.setupBrowserAndSniffer(b.pageProgress, b.fullscreenContainer, b.browserRoot,
@@ -851,7 +913,7 @@ jobs:
                           if (caught.putIfAbsent(m.url, m) == null) runOnUiThread { b.btnSniffed.text = "Catch(${caught.size})" }
                       }
                   )
-                  b.webView.loadUrl("https://duckduckgo.com")
+                  b.webView.loadUrl("https://www.google.com")
 
                   val loadInput = {
                       val raw = b.urlInput.text.toString().trim()
@@ -871,6 +933,12 @@ jobs:
                   b.btnFwd.setOnClickListener { if (b.webView.canGoForward()) b.webView.goForward() }
                   b.btnReload.setOnClickListener { b.webView.reload() }
 
+                  b.btnDesk.setOnClickListener {
+                      desktopMode = !desktopMode
+                      b.webView.settings.userAgentString = if (desktopMode) DESKTOP_UA else MOBILE_UA
+                      b.btnDesk.text = if (desktopMode) "Desk" else "Mob"
+                      b.webView.reload()
+                  }
                   b.btnAd.setOnClickListener {
                       AdBlockEngine.enabled = !AdBlockEngine.enabled
                       b.btnAd.text = if (AdBlockEngine.enabled) "Ad:MAX" else "Ad:OFF"
@@ -879,10 +947,15 @@ jobs:
                       val perm = GoBackend.VpnService.prepare(this)
                       if (perm != null) vpnLauncher.launch(perm) else toggleWarp()
                   }
+                  b.btnVpn.setOnLongClickListener {
+                      val p = warp.cyclePort()
+                      Toast.makeText(this, "WARP Port switched to :$p", Toast.LENGTH_SHORT).show()
+                      true
+                  }
                   b.btnYtDlp.setOnClickListener {
                       val cur = b.webView.url ?: b.urlInput.text.toString().trim()
                       val headers = mapOf("User-Agent" to b.webView.settings.userAgentString, "Referer" to cur)
-                      showQualityAndRunYtDlp(cur, headers)
+                      fetchQualitiesAndRun(cur, headers)
                   }
                   b.btnSniffed.setOnClickListener {
                       val items = caught.values.toList().sortedByDescending { it.url.contains(".m3u8") || it.url.contains(".mpd") }
@@ -894,7 +967,7 @@ jobs:
                           .setItems(items.map { "[${it.mimeHint}] ${it.url.takeLast(50)}" }.toTypedArray()) { _, i ->
                               val m = items[i]
                               AlertDialog.Builder(this).setTitle("Download Engine")
-                                  .setPositiveButton("yt-dlp + FFmpeg (Best)") { _, _ -> showQualityAndRunYtDlp(m.url, m.headers) }
+                                  .setPositiveButton("Fetch Qualities (yt-dlp)") { _, _ -> fetchQualitiesAndRun(m.url, m.headers) }
                                   .setNegativeButton("Direct Stream (GDrive/HLS)") { _, _ -> directStream(m) }.show()
                           }.show()
                   }
@@ -919,24 +992,33 @@ jobs:
                   try {
                       val on = warp.toggle()
                       b.btnVpn.text = if (on) "VPN:ON" else "VPN:OFF"
-                      b.statusText.text = if (on) "WARP WireGuard VPN Active" else "VPN Disconnected"
-                  } catch (e: Exception) {
+                      b.statusText.text = if (on) "WARP VPN Active (:${warp.currentPort()})" else "VPN Disconnected"
+                  } catch (t: Throwable) {
                       b.btnVpn.text = "VPN:OFF"
-                      b.statusText.text = "VPN Err: ${e.message}"
+                      b.statusText.text = "VPN Err: ${t.message}"
                   }
               }
 
-              private fun showQualityAndRunYtDlp(url: String, headers: Map<String, String>) {
-                  val opts = arrayOf("Best Quality (Auto)", "1080p MP4", "720p MP4", "480p MP4", "Audio Only (M4A)")
-                  val fmts = arrayOf("bv*+ba/b", "bv*[height<=1080]+ba/b[height<=1080]", "bv*[height<=720]+ba/b[height<=720]", "bv*[height<=480]+ba/b[height<=480]", "ba/b")
-                  AlertDialog.Builder(this).setTitle("yt-dlp + FFmpeg")
-                      .setItems(opts) { _, i -> runYtDlp(url, headers, fmts[i]) }.show()
+              private fun fetchQualitiesAndRun(url: String, headers: Map<String, String>) = lifecycleScope.launch {
+                  b.statusText.text = "Scanning real qualities..."
+                  try {
+                      val (title, fmts) = YtDlpEngine.fetchFormats(url, headers)
+                      AlertDialog.Builder(this@MainActivity).setTitle(title.take(45))
+                          .setItems(fmts.map { it.label }.toTypedArray()) { _, i -> runYtDlp(url, headers, fmts[i].selector) }
+                          .show()
+                      b.statusText.text = "Select quality"
+                  } catch (_: Throwable) {
+                      val opts = arrayOf("Best Auto", "1080p MP4", "720p MP4", "480p MP4", "Audio M4A")
+                      val fmts = arrayOf("bv*+ba/b", "bv*[height<=1080]+ba/b[height<=1080]", "bv*[height<=720]+ba/b[height<=720]", "bv*[height<=480]+ba/b[height<=480]", "ba/b")
+                      AlertDialog.Builder(this@MainActivity).setTitle("Quality Presets")
+                          .setItems(opts) { _, i -> runYtDlp(url, headers, fmts[i]) }.show()
+                  }
               }
 
               private fun runYtDlp(url: String, headers: Map<String, String>, fmt: String) = lifecycleScope.launch {
                   val toDrive = b.switchGDrive.isChecked; val tok = driveToken
                   if (toDrive && tok == null) { Toast.makeText(this@MainActivity, "Link Drive first", Toast.LENGTH_SHORT).show(); return@launch }
-                  b.statusText.text = "Fetching with yt-dlp..."
+                  b.statusText.text = "Downloading..."
                   try {
                       val outDir = if (toDrive) cacheDir else vault.dir
                       val outFile = YtDlpEngine.download(url, headers, outDir, fmt) { _, msg ->
@@ -951,12 +1033,12 @@ jobs:
                               }
                               up.finish(); outFile.delete()
                           }
-                          b.statusText.text = "Uploaded to GDrive: ${outFile.name}"
+                          b.statusText.text = "Uploaded GDrive: ${outFile.name}"
                       } else {
-                          b.statusText.text = "Saved in Vault: ${outFile.name}"
+                          b.statusText.text = "Saved Vault: ${outFile.name}"
                       }
-                  } catch (e: Exception) {
-                      b.statusText.text = "yt-dlp Err: ${e.message}"
+                  } catch (t: Throwable) {
+                      b.statusText.text = "Err: ${t.message}"
                   }
               }
 
@@ -974,7 +1056,7 @@ jobs:
                       else hls.streamDirectUrl(targetUrl, m.headers, wr) { g, _ -> runOnUiThread { b.statusText.text = "${g / 1024}KB" } }
                       up?.finish(); fos?.close()
                       withContext(Dispatchers.Main) { b.statusText.text = "Done: $name" }
-                  } catch (e: Exception) { withContext(Dispatchers.Main) { b.statusText.text = "Err: ${e.message}" } }
+                  } catch (t: Throwable) { withContext(Dispatchers.Main) { b.statusText.text = "Err: ${t.message}" } }
               }
 
               private fun showVault() {
@@ -1037,8 +1119,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v2.0.${{ github.run_number }}.${{ github.run_attempt }}"
+          TAG="v2.1.${{ github.run_number }}.${{ github.run_attempt }}"
           gh release create "$TAG" dist/*.apk \
             --title "PWdm $TAG" \
-            --notes "arm64-v8a APK install karein" \
+            --notes "R8 ZipUtils crash fixed + Real quality fetcher + Desktop mode + Extreme AdBlock + WARP VPN" \
             --latest
