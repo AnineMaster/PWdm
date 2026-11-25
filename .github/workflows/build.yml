@@ -1,4 +1,4 @@
-name: Build PWdm v3 Turbo APK
+name: Build PWdm v3.1 Turbo APK
 on:
   push:
   workflow_dispatch:
@@ -12,9 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Generate PWdm v3 Turbo Project
+      - name: Generate PWdm v3.1 Project
         run: |
-          rm -rf app/src/main/java/com/nova/dm/vpn app/src/main/java/com/nova/dm/engine
           mkdir -p app/src/main/res/layout app/src/main/java/com/nova/dm/{sniffer,engine,drive,storage}
 
           cat << 'EOF' > gradle.properties
@@ -55,8 +54,8 @@ jobs:
                   applicationId = "com.nova.dm"
                   minSdk = 24
                   targetSdk = 35
-                  versionCode = 30
-                  versionName = "3.0-Turbo"
+                  versionCode = 31
+                  versionName = "3.1-Turbo"
               }
               splits {
                   abi {
@@ -94,7 +93,7 @@ jobs:
               implementation("androidx.media3:media3-exoplayer:1.5.1")
               implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
               implementation("androidx.media3:media3-ui:1.5.1")
-              implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.4")
+              implementation("com.github.teamnewpipe:NewPipeExtractor:v0.27.1")
               implementation("com.google.android.gms:play-services-auth:21.3.0")
           }
           EOF
@@ -115,12 +114,14 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
               <application
                   android:allowBackup="false"
+                  android:hardwareAccelerated="true"
                   android:label="PWdm Turbo"
                   android:usesCleartextTraffic="true"
                   android:theme="@style/Theme.Material3.DayNight.NoActionBar">
                   <activity
                       android:name=".MainActivity"
                       android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden"
+                      android:windowSoftInputMode="adjustResize"
                       android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -143,29 +144,29 @@ jobs:
                   android:layout_width="match_parent" android:layout_height="match_parent" android:padding="4dp">
                   <LinearLayout android:orientation="horizontal" android:gravity="center_vertical"
                       android:layout_width="match_parent" android:layout_height="wrap_content">
-                      <Button android:id="@+id/btnBack" android:text="&lt;" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
-                      <Button android:id="@+id/btnFwd" android:text="&gt;" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
-                      <Button android:id="@+id/btnReload" android:text="R" android:minWidth="36dp" android:padding="2dp" android:layout_width="36dp" android:layout_height="40dp"/>
-                      <EditText android:id="@+id/urlInput" android:hint="URL / Search / YouTube" android:imeOptions="actionGo"
-                          android:inputType="textUri" android:singleLine="true" android:textSize="13sp"
-                          android:layout_weight="1" android:layout_width="0dp" android:layout_height="42dp"/>
-                      <Button android:id="@+id/btnGo" android:text="Go" android:minWidth="44dp" android:padding="4dp" android:layout_width="wrap_content" android:layout_height="40dp"/>
+                      <Button android:id="@+id/btnBack" android:text="&lt;" android:minWidth="34dp" android:padding="2dp" android:layout_width="34dp" android:layout_height="38dp"/>
+                      <Button android:id="@+id/btnFwd" android:text="&gt;" android:minWidth="34dp" android:padding="2dp" android:layout_width="34dp" android:layout_height="38dp"/>
+                      <Button android:id="@+id/btnReload" android:text="R" android:minWidth="34dp" android:padding="2dp" android:layout_width="34dp" android:layout_height="38dp"/>
+                      <EditText android:id="@+id/urlInput" android:hint="Search Google or paste URL" android:imeOptions="actionGo"
+                          android:inputType="textUri" android:singleLine="true" android:selectAllOnFocus="true" android:textSize="13sp"
+                          android:layout_weight="1" android:layout_width="0dp" android:layout_height="40dp"/>
+                      <Button android:id="@+id/btnGo" android:text="Go" android:minWidth="44dp" android:padding="4dp" android:layout_width="wrap_content" android:layout_height="38dp"/>
                   </LinearLayout>
                   <ProgressBar android:id="@+id/pageProgress" style="?android:attr/progressBarStyleHorizontal"
                       android:max="100" android:visibility="gone" android:layout_width="match_parent" android:layout_height="3dp"/>
                   <HorizontalScrollView android:scrollbars="none" android:layout_width="match_parent" android:layout_height="wrap_content">
                       <LinearLayout android:orientation="horizontal" android:gravity="center_vertical"
                           android:layout_width="wrap_content" android:layout_height="wrap_content">
-                          <Button android:id="@+id/btnSniffed" android:text="Qualities(0)" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnThreads" android:text="64T" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnAd" android:text="Ad:MAX" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnDesk" android:text="Mob" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnAuthDrive" android:text="Link" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
-                          <Button android:id="@+id/btnVault" android:text="Vault" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="36dp"/>
+                          <Button android:id="@+id/btnSniffed" android:text="Qualities(0)" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnThreads" android:text="64T" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnAd" android:text="Ad:ON" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnDesk" android:text="Mob" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnAuthDrive" android:text="Link" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnVault" android:text="Vault" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
                       </LinearLayout>
                   </HorizontalScrollView>
-                  <TextView android:id="@+id/statusText" android:text="Ready (64-Thread Turbo Engine)" android:textSize="11sp"
+                  <TextView android:id="@+id/statusText" android:text="Ready (64-Thread Turbo)" android:textSize="11sp"
                       android:maxLines="1" android:ellipsize="end" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                   <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_weight="1" android:layout_height="0dp"/>
               </LinearLayout>
@@ -194,14 +195,12 @@ jobs:
                   "openx.net", "casalemedia.com", "scorecardresearch.com", "mc.yandex.ru",
                   "tsyndicate.com", "adskeeper.co.uk", "adtng.com", "tsyndicate.net", "acscdn.com",
                   "histats.com", "amung.us", "onclkds.com", "pushub.net", "revcontent.com",
-                  "bidvertiser.com", "infolinks.com", "media.net", "amazon-adsystem.com", "moatads.com",
-                  "quantserve.com", "chartbeat.com", "mixpanel.com", "adjust.com", "appsflyer.com",
-                  "onclickperformance.com", "wpadmngr.com", "bidgear.com", "adcash.com", "teads.tv"
+                  "bidvertiser.com", "amazon-adsystem.com", "moatads.com", "quantserve.com",
+                  "chartbeat.com", "onclickperformance.com", "wpadmngr.com", "bidgear.com", "adcash.com", "teads.tv"
               )
-              private val adPatterns = listOf(
-                  "/ads/", "/adserver", "/popunder", "/popup", "vast.xml", "vpaid", "pagead/",
-                  "doubleclick", "adsystem", "banner_", "clicktrack", "track.php?", "prebid",
-                  "/api/stats/ads", "get_midroll_info", "ad_break", "ptracking", "pop.js", "ads.js"
+              private val adPathHints = listOf(
+                  "/pagead/", "vast.xml", "vpaid", "get_midroll_info", "/api/stats/ads", "ptracking",
+                  "/popunder", "popads", "googlesyndication", "doubleclick"
               )
 
               fun isAdUrl(url: String): Boolean {
@@ -211,9 +210,9 @@ jobs:
                       if (!u.contains("vast") && !u.contains("doubleclick") && !u.contains("ad_break")) return false
                   }
                   val host = try { Uri.parse(u).host.orEmpty() } catch (_: Exception) { "" }
-                  if (adDomains.any { host == it || host.endsWith(".$it") || host.contains(it) }) return true
-                  if (host.startsWith("ads.") || host.startsWith("ad.") || host.startsWith("pop.") || host.startsWith("track.")) return true
-                  return adPatterns.any { u.contains(it) }
+                  if (adDomains.any { host == it || host.endsWith(".$it") }) return true
+                  if (host.startsWith("ads.") || host.startsWith("pop.") || host.startsWith("pixel.")) return true
+                  return adPathHints.any { u.contains(it) }
               }
 
               fun emptyResponse(): WebResourceResponse =
@@ -226,7 +225,6 @@ jobs:
 
           import android.annotation.SuppressLint
           import android.graphics.Bitmap
-          import android.net.Uri
           import android.os.Message
           import android.view.View
           import android.webkit.*
@@ -246,6 +244,7 @@ jobs:
               onUrlChange: (String) -> Unit,
               onMediaFound: (SniffedMedia) -> Unit
           ) {
+              setLayerType(View.LAYER_TYPE_HARDWARE, null)
               settings.apply {
                   javaScriptEnabled = true
                   domStorageEnabled = true
@@ -286,6 +285,7 @@ jobs:
                       progressBar.visibility = if (newProgress in 1..99) View.VISIBLE else View.GONE
                       progressBar.progress = newProgress
                   }
+                  // Kill popup windows / popunders without breaking normal links
                   override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean = false
                   override fun onJsAlert(view: WebView, url: String, message: String, result: JsResult): Boolean { result.cancel(); return true }
                   override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean { result.cancel(); return true }
@@ -303,17 +303,15 @@ jobs:
               webViewClient = object : WebViewClient() {
                   override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
                       val u = req.url.toString()
+                      // Block intent://, market:// app hijackers & known ad domains, but allow normal redirects & iframes
                       if (!u.startsWith("http://") && !u.startsWith("https://")) return true
                       if (AdBlockEngine.isAdUrl(u)) return true
-                      val curHost = view.url?.let { Uri.parse(it).host } ?: ""
-                      val newHost = req.url.host ?: ""
-                      if (AdBlockEngine.enabled && !req.hasGesture() && curHost.isNotEmpty() && curHost != newHost) return true
                       return false
                   }
                   override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { onUrlChange(url) }
                   override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
                       val u = req.url.toString()
-                      if (AdBlockEngine.isAdUrl(u)) return AdBlockEngine.emptyResponse()
+                      if (!req.isForMainFrame && AdBlockEngine.isAdUrl(u)) return AdBlockEngine.emptyResponse()
                       val clean = u.substringBefore("?").lowercase()
                       if (listOf(".ts", ".m4s", ".aac", ".vtt", ".srt", ".png", ".jpg", ".gif", ".css", ".js", ".woff2", ".svg").any { clean.endsWith(it) }) {
                           return super.shouldInterceptRequest(view, req)
@@ -322,8 +320,8 @@ jobs:
                       val accept = req.requestHeaders["Accept"]?.lowercase() ?: ""
                       val isMedia = l.contains(".m3u8") || l.contains(".mpd") || clean.endsWith(".mp4") ||
                           clean.endsWith(".webm") || clean.endsWith(".mkv") || l.contains("videoplayback") ||
-                          l.contains("/hls/") || l.contains("master.txt") || l.contains("mime=video") ||
-                          accept.contains("video/") || accept.contains("mpegurl")
+                          l.contains("/hls/") || l.contains("master.txt") || l.contains("index.m3u8") ||
+                          l.contains("mime=video") || l.contains("/playlist") || accept.contains("video/") || accept.contains("mpegurl")
                       if (isMedia) {
                           val h = req.requestHeaders.toMutableMap()
                           CookieManager.getInstance().getCookie(u)?.takeIf { it.isNotBlank() }?.let { h["Cookie"] = it }
@@ -337,7 +335,7 @@ jobs:
                       val adJs = if (AdBlockEngine.enabled) """
                           if(!document.getElementById('__nCss')){
                               const st=document.createElement('style'); st.id='__nCss';
-                              st.textContent='ins.adsbygoogle,[id*="google_ads"],[class*="ad-banner"],[class*="popup"],[id*="popunder"],ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,.ytp-ad-module,.ytp-ad-overlay-container{display:none!important;height:0!important;}';
+                              st.textContent='ins.adsbygoogle,[id*="google_ads"],[class*="ad-banner"],[class*="popunder"],ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,.ytp-ad-module,.ytp-ad-overlay-container{display:none!important;height:0!important;}';
                               document.head?.appendChild(st);
                           }
                           window.open = function(){ return null; };
@@ -345,39 +343,32 @@ jobs:
                       evaluateJavascript("""
                           (function(){
                               $adJs
-                              // Auto-click age-gate / enter / agree / play (Ported from Colab Phase 2)
-                              const clickGate = () => {
-                                  document.querySelectorAll('button,a,.play,.vjs-big-play-button,.jw-display-icon-container,[class*="play"],[class*="enter"],[class*="agree"],[class*="18"]').forEach(el=>{
-                                      const t=(el.innerText||'').toLowerCase();
-                                      if(t.includes('enter')||t.includes('18')||t.includes('agree')||t.includes('yes')||t.includes('play')||String(el.className).includes('play')){
-                                          if(!el.dataset.__ck && el.tagName!=='A'){ el.dataset.__ck=1; try{el.click();}catch(e){} }
-                                      }
-                                  });
+                              window.__seen = window.__seen || new Set();
+                              const emit = (u, tag) => {
+                                  if(u && typeof u==='string' && u.startsWith('http') && !window.__seen.has(u)){
+                                      window.__seen.add(u);
+                                      NovaSniff.onJsMedia(u, tag, location.href);
+                                  }
                               };
-                              clickGate();
-                              // Deep Script + JSON + DOM video scanner (Ported from Colab Phase 2)
-                              const scanPage = () => {
-                                  document.querySelectorAll('video,video source').forEach(e=>{
-                                      const u=e.src||e.getAttribute('data-src')||e.currentSrc;
-                                      if(u) NovaSniff.onJsMedia(u,'DOM',location.href);
-                                  });
+                              const scanOnce = () => {
+                                  document.querySelectorAll('video,video source').forEach(e=>emit(e.src||e.getAttribute('data-src')||e.currentSrc,'DOM'));
                                   let txt="";
-                                  document.querySelectorAll('script').forEach(s=>{ txt+=" "+(s.textContent||""); });
-                                  if(window.initials){ try{ txt+=" "+JSON.stringify(window.initials); }catch(e){} }
+                                  document.querySelectorAll('script').forEach(s=>{ if(s.textContent && s.textContent.length<250000) txt+=" "+s.textContent; });
                                   txt=txt.replace(/\\\//g,'/');
                                   const ms=txt.match(/https?:\/\/[^"'\s<>\\]+?\.(?:m3u8|mp4|mpd)(?:\?[^"'\s<>\\]*)?/gi)||[];
-                                  [...new Set(ms)].forEach(m=>NovaSniff.onJsMedia(m,'JSON',location.href));
+                                  ms.slice(0,25).forEach(m=>emit(m,'JSON'));
+                                  document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
                               };
-                              scanPage();
+                              scanOnce();
+                              setTimeout(scanOnce, 2500);
                               if(window.__nH) return; window.__nH=true;
-                              const f=window.fetch; window.fetch=function(...a){const u=a[0]?.url||a[0]; if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))NovaSniff.onJsMedia(u,'XHR',location.href); return f.apply(this,a);};
-                              const o=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))NovaSniff.onJsMedia(u,'XHR',location.href); return o.apply(this,arguments);};
+                              const f=window.fetch; window.fetch=function(...a){const u=a[0]?.url||a[0]; if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))emit(u,'Fetch'); return f.apply(this,a);};
+                              const o=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))emit(u,'XHR'); return o.apply(this,arguments);};
                               setInterval(()=>{
-                                  scanPage();
+                                  document.querySelectorAll('video').forEach(v=>emit(v.currentSrc||v.src,'Play'));
                                   document.querySelector('.ytp-ad-skip-button,.ytp-skip-ad-button,.ytp-ad-skip-button-modern')?.click();
                                   const adV=document.querySelector('.ad-showing video'); if(adV&&isFinite(adV.duration)){adV.muted=true;adV.currentTime=adV.duration;}
-                                  document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
-                              },1500);
+                              }, 2000);
                           })();
                       """.trimIndent(), null)
                   }
@@ -433,11 +424,11 @@ jobs:
           data class QualityOption(
               val title: String,
               val label: String,
+              val sortHeight: Int,
               val videoUrl: String,
               val audioUrl: String?,
               val isHls: Boolean,
               val headers: Map<String, String>,
-              val contentLength: Long = -1L,
               val supportsRange: Boolean = false
           )
 
@@ -464,29 +455,47 @@ jobs:
                   ytReady = true
               }
 
+              private fun cleanTitle(raw: String?, url: String): String {
+                  val t = raw?.trim().orEmpty()
+                  val bad = setOf("", "google", "about:blank", "duckduckgo", "youtube")
+                  if (t.lowercase() !in bad && !t.startsWith("http")) return t.take(55)
+                  val slug = url.substringBefore("?").substringAfterLast("/").substringBeforeLast(".")
+                  return if (slug.length in 3..55) slug else "Video_${System.currentTimeMillis() % 10000}"
+              }
+
               fun probeYouTube(url: String, client: OkHttpClient): List<QualityOption> {
                   ensureYt(client)
                   val info = StreamInfo.getInfo(ServiceList.YouTube, url)
+                  val title = cleanTitle(info.name, url)
                   val bestAudio = info.audioStreams.maxByOrNull { it.averageBitrate }
                   val out = mutableListOf<QualityOption>()
                   info.videoStreams.forEach {
-                      out += QualityOption(info.name, "${it.resolution} | MP4 | Muxed (V+A)", it.content, null, false, emptyMap(), -1L, true)
+                      val h = it.resolution.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 360
+                      out += QualityOption(title, "${it.resolution} | MP4 | Muxed", h, it.content, null, false, emptyMap(), true)
                   }
                   info.videoOnlyStreams.filter { it.format?.name == "MPEG_4" }.forEach {
                       if (bestAudio != null) {
-                          out += QualityOption(info.name, "${it.resolution} | MP4 | HD (V+A Merge)", it.content, bestAudio.content, false, emptyMap(), -1L, true)
+                          val h = it.resolution.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 720
+                          out += QualityOption(title, "${it.resolution} | MP4 | HD (V+A)", h, it.content, bestAudio.content, false, emptyMap(), true)
                       }
                   }
                   if (bestAudio != null) {
-                      out += QualityOption(info.name, "Audio Only | M4A | ${bestAudio.averageBitrate / 1000}kbps", bestAudio.content, null, false, emptyMap(), -1L, true)
+                      out += QualityOption(title, "Audio Only | M4A | ${bestAudio.averageBitrate / 1000}kbps", 1, bestAudio.content, null, false, emptyMap(), true)
                   }
-                  return out
+                  return out.sortedByDescending { it.sortHeight }
               }
 
-              fun probeSniffed(list: List<SniffedMedia>, client: OkHttpClient): List<QualityOption> {
+              fun probeSniffed(
+                  pageTitle: String?, pageUrl: String, list: List<SniffedMedia>, client: OkHttpClient
+              ): List<QualityOption> {
+                  val title = cleanTitle(pageTitle, pageUrl)
                   val out = mutableListOf<QualityOption>()
+                  val seenUrls = mutableSetOf<String>()
+
                   for (m in list) {
+                      if (!seenUrls.add(m.url)) continue
                       if (m.url.contains(".m3u8", true)) {
+                          var addedVariants = false
                           try {
                               val r = Request.Builder().url(m.url).apply { m.headers.forEach { (k, v) -> header(k, v) } }.build()
                               val txt = client.newCall(r).execute().use { if (it.isSuccessful) it.body!!.string() else "" }
@@ -494,15 +503,21 @@ jobs:
                                   val base = m.url.toHttpUrl()
                                   val lines = txt.lines().map { it.trim() }
                                   for (i in lines.indices) if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
-                                      val res = Regex("RESOLUTION=(\\d+x\\d+)").find(lines[i])?.groupValues?.get(1) ?: "Stream"
+                                      val res = Regex("RESOLUTION=(\\d+x\\d+)").find(lines[i])?.groupValues?.get(1) ?: "Auto"
+                                      val h = res.substringAfter("x").toIntOrNull() ?: 720
                                       val bw = Regex("BANDWIDTH=(\\d+)").find(lines[i])?.groupValues?.get(1)?.toLongOrNull()?.div(1000) ?: 0
                                       val next = lines.drop(i + 1).firstOrNull { it.isNotEmpty() && !it.startsWith("#") } ?: continue
-                                      out += QualityOption("Stream", "$res | HLS | ${bw}k | [${m.sourceTag}]", base.resolve(next).toString(), null, true, m.headers)
+                                      val vUrl = base.resolve(next).toString()
+                                      if (seenUrls.add(vUrl)) {
+                                          out += QualityOption(title, "${h}p ($res) | HLS ${bw}k [${m.sourceTag}]", h, vUrl, null, true, m.headers)
+                                          addedVariants = true
+                                      }
                                   }
-                                  continue
                               }
                           } catch (_: Exception) {}
-                          out += QualityOption("Stream", "HLS Playlist | [${m.sourceTag}] ${m.url.takeLast(28)}", m.url, null, true, m.headers)
+                          if (!addedVariants) {
+                              out += QualityOption(title, "HLS Stream | [${m.sourceTag}] ${m.url.substringBefore("?").takeLast(25)}", 500, m.url, null, true, m.headers)
+                          }
                       } else {
                           var len = -1L; var ranged = false
                           try {
@@ -512,11 +527,12 @@ jobs:
                                   ranged = resp.header("Accept-Ranges")?.contains("bytes", true) == true
                               }
                           } catch (_: Exception) {}
+                          if (len in 1..200_000) continue // skip tiny ad/beacon files
                           val mb = if (len > 0) "${len / 1048576}MB" else "?MB"
-                          out += QualityOption("Direct", "MP4 | $mb | ${if (ranged) "64T-Range" else "Stream"} | [${m.sourceTag}]", m.url, null, false, m.headers, len, ranged)
+                          out += QualityOption(title, "MP4 | $mb | ${if (ranged) "64T-Turbo" else "Stream"} [${m.sourceTag}]", 600, m.url, null, false, m.headers, ranged)
                       }
                   }
-                  return out
+                  return out.sortedByDescending { it.sortHeight }
               }
           }
           EOF
@@ -554,7 +570,6 @@ jobs:
                   throw last ?: error("Segment failed")
               }
 
-              // 64-Thread Sliding-Window HLS Segment Turbo
               suspend fun downloadHlsTurbo(
                   url: String, h: Map<String, String>, threads: Int,
                   onChunk: suspend (ByteArray) -> Unit, onProg: (Int, Int) -> Unit
@@ -572,6 +587,7 @@ jobs:
                   }
                   val batch = threads.coerceIn(4, 64)
                   var done = 0
+                  var lastUi = 0L
                   for (s in segs.indices step batch) {
                       val slice = segs.subList(s, minOf(s + batch, segs.size))
                       val got = slice.mapIndexed { idx, su ->
@@ -588,11 +604,14 @@ jobs:
                               d
                           }
                       }.awaitAll()
-                      for (b in got) { onChunk(b); done++; onProg(done, segs.size) }
+                      for (b in got) {
+                          onChunk(b); done++
+                          val now = System.currentTimeMillis()
+                          if (now - lastUi > 250 || done == segs.size) { lastUi = now; onProg(done, segs.size) }
+                      }
                   }
               }
 
-              // 64-Thread Parallel Range FileChannel Writer (Zero-Copy Disk)
               suspend fun downloadDirectToFileTurbo(
                   url: String, h: Map<String, String>, outFile: File, threads: Int, onProg: (Long, Long) -> Unit
               ) = withContext(Dispatchers.IO) {
@@ -613,6 +632,7 @@ jobs:
                   val workers = threads.coerceIn(4, 64)
                   val chunk = total / workers
                   val doneBytes = AtomicLong(0L)
+                  val lastUi = AtomicLong(0L)
                   RandomAccessFile(outFile, "rw").use { raf ->
                       raf.setLength(total)
                       val channel = raf.channel
@@ -621,12 +641,10 @@ jobs:
                               val start = w * chunk
                               val end = if (w == workers - 1) total - 1 else (start + chunk - 1)
                               async(Dispatchers.IO) {
-                                  var pos = start
-                                  var attempt = 0
+                                  var pos = start; var attempt = 0
                                   while (pos <= end && attempt < 5) {
                                       try {
-                                          val req = Request.Builder().url(url)
-                                              .header("Range", "bytes=$pos-$end")
+                                          val req = Request.Builder().url(url).header("Range", "bytes=$pos-$end")
                                               .apply { h.forEach { (k, v) -> header(k, v) } }.build()
                                           client.newCall(req).execute().use { resp ->
                                               if (!resp.isSuccessful) error("HTTP ${resp.code}")
@@ -637,13 +655,14 @@ jobs:
                                                   channel.write(ByteBuffer.wrap(buf, 0, n), pos)
                                                   pos += n
                                                   val cur = doneBytes.addAndGet(n.toLong())
-                                                  onProg(cur, total)
+                                                  val now = System.currentTimeMillis()
+                                                  val prev = lastUi.get()
+                                                  if ((now - prev > 250 || cur >= total) && lastUi.compareAndSet(prev, now)) {
+                                                      onProg(cur, total)
+                                                  }
                                               }
                                           }
-                                      } catch (e: Exception) {
-                                          attempt++
-                                          if (attempt >= 5) throw e
-                                      }
+                                      } catch (e: Exception) { attempt++; if (attempt >= 5) throw e }
                                   }
                               }
                           }.awaitAll()
@@ -658,8 +677,14 @@ jobs:
                   client.newCall(r).execute().use { resp ->
                       if (!resp.isSuccessful) error("HTTP ${resp.code}")
                       val body = resp.body!!; val tot = body.contentLength(); val ins = body.byteStream()
-                      val buf = ByteArray(256 * 1024); var read = 0L
-                      while (true) { val n = ins.read(buf); if (n <= 0) break; onChunk(buf.copyOf(n)); read += n; onProg(read, tot) }
+                      val buf = ByteArray(256 * 1024); var read = 0L; var lastUi = 0L
+                      while (true) {
+                          val n = ins.read(buf); if (n <= 0) break
+                          onChunk(buf.copyOf(n)); read += n
+                          val now = System.currentTimeMillis()
+                          if (now - lastUi > 250) { lastUi = now; onProg(read, tot) }
+                      }
+                      onProg(read, tot)
                   }
               }
           }
@@ -873,7 +898,7 @@ jobs:
                   vault = VaultManager(this)
 
                   b.webView.setupBrowserAndSniffer(b.pageProgress, b.fullscreenContainer, b.browserRoot,
-                      onUrlChange = { u -> runOnUiThread { b.urlInput.setText(u) } },
+                      onUrlChange = { u -> runOnUiThread { if (!b.urlInput.hasFocus()) b.urlInput.setText(u) } },
                       onMediaFound = { m ->
                           if (caught.putIfAbsent(m.url, m) == null) runOnUiThread { b.btnSniffed.text = "Qualities(${caught.size})" }
                       }
@@ -883,14 +908,17 @@ jobs:
                   val loadInput = {
                       val raw = b.urlInput.text.toString().trim()
                       if (raw.isNotEmpty()) {
+                          b.urlInput.clearFocus()
                           caught.clear(); b.btnSniffed.text = "Qualities(0)"
                           val target = when {
                               raw.startsWith("http://") || raw.startsWith("https://") -> raw
                               raw.contains(".") && !raw.contains(" ") -> "https://$raw"
                               else -> "https://www.google.com/search?q=${URLEncoder.encode(raw, "UTF-8")}"
                           }
-                          if (target.contains("youtube.com") || target.contains("youtu.be")) openQualityTable(target)
                           b.webView.loadUrl(target)
+                          if (target.contains("youtube.com/watch") || target.contains("youtu.be/") || target.contains("/shorts/")) {
+                              openQualityTable(target, b.webView.title)
+                          }
                       }
                   }
                   b.btnGo.setOnClickListener { loadInput() }
@@ -911,9 +939,11 @@ jobs:
                   }
                   b.btnAd.setOnClickListener {
                       AdBlockEngine.enabled = !AdBlockEngine.enabled
-                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:MAX" else "Ad:OFF"
+                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:ON" else "Ad:OFF"
                   }
-                  b.btnSniffed.setOnClickListener { openQualityTable(b.webView.url ?: b.urlInput.text.toString().trim()) }
+                  b.btnSniffed.setOnClickListener {
+                      openQualityTable(b.webView.url ?: b.urlInput.text.toString().trim(), b.webView.title)
+                  }
                   b.btnAuthDrive.setOnClickListener {
                       val req = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope("https://www.googleapis.com/auth/drive.file"))).build()
                       Identity.getAuthorizationClient(this).authorize(req).addOnSuccessListener { res ->
@@ -928,24 +958,27 @@ jobs:
                   })
               }
 
-              private fun openQualityTable(pageUrl: String) = lifecycleScope.launch {
-                  b.statusText.text = "Probing A-to-Z qualities..."
+              private fun openQualityTable(pageUrl: String, pageTitle: String?) = lifecycleScope.launch {
+                  b.statusText.text = "Fetching qualities..."
+                  var ytErr: String? = null
                   val options = withContext(Dispatchers.IO) {
                       if (pageUrl.contains("youtube.com") || pageUrl.contains("youtu.be")) {
-                          try { QualityProber.probeYouTube(pageUrl, client) } catch (_: Exception) { emptyList() }
+                          try { QualityProber.probeYouTube(pageUrl, client) }
+                          catch (t: Throwable) { ytErr = t.message; emptyList() }
                       } else {
                           val list = caught.values.toList().sortedByDescending { it.url.contains(".m3u8") || it.url.contains(".mpd") }
-                          QualityProber.probeSniffed(list, client)
+                          QualityProber.probeSniffed(pageTitle, pageUrl, list, client)
                       }
                   }
                   if (options.isEmpty()) {
-                      b.statusText.text = "Play video on page 2-3s, then tap Qualities"
-                      Toast.makeText(this@MainActivity, "Play video first so sniffer catches stream!", Toast.LENGTH_SHORT).show()
+                      val msg = if (ytErr != null) "YT Err: ${ytErr?.take(60)}" else "Play video 2s first, then tap Qualities"
+                      b.statusText.text = msg
+                      Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                       return@launch
                   }
-                  b.statusText.text = "${options.size} qualities found — pick one"
+                  b.statusText.text = "${options.size} qualities found"
                   AlertDialog.Builder(this@MainActivity)
-                      .setTitle("A-to-Z Qualities (${options.size})")
+                      .setTitle("${options.first().title.take(35)} (${options.size})")
                       .setItems(options.mapIndexed { idx, o -> "${idx + 1}. ${o.label}" }.toTypedArray()) { _, i ->
                           startTurboDownload(options[i])
                       }.show()
@@ -957,7 +990,8 @@ jobs:
                       withContext(Dispatchers.Main) { Toast.makeText(this@MainActivity, "Link Drive first", Toast.LENGTH_SHORT).show() }
                       return@launch
                   }
-                  val name = "${opt.title.take(30)}_${System.currentTimeMillis()}.mp4"
+                  val safeName = opt.title.replace(Regex("[^a-zA-Z0-9._ -]"), "_").trim().take(42).ifEmpty { "Video" }
+                  val name = "${safeName}_${System.currentTimeMillis() % 10000}.mp4"
                   try {
                       if (opt.audioUrl != null) {
                           val tv = File(cacheDir, "v.tmp"); val ta = File(cacheDir, "a.tmp")
@@ -997,7 +1031,7 @@ jobs:
                           }
                           up?.finish(); fos?.close()
                       }
-                      withContext(Dispatchers.Main) { b.statusText.text = "Complete: $name" }
+                      withContext(Dispatchers.Main) { b.statusText.text = "Saved: $name" }
                   } catch (t: Throwable) {
                       withContext(Dispatchers.Main) { b.statusText.text = "Err: ${t.message}" }
                   }
@@ -1056,8 +1090,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.0.${{ github.run_number }}.${{ github.run_attempt }}"
+          TAG="v3.1.${{ github.run_number }}.${{ github.run_attempt }}"
           gh release create "$TAG" dist/*.apk \
             --title "PWdm Turbo $TAG" \
-            --notes "Ultra-compressed ~6-8MB APK with 64-Thread Turbo Downloader + A-to-Z Quality Selector + WebView Sniffer" \
+            --notes "Fixed browser site loading + lag + real video titles + NewPipeExtractor v0.27.1" \
             --latest
