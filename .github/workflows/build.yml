@@ -1,0 +1,653 @@
+name: Build PWdm APK
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Project
+        run: |
+          mkdir -p app/src/main/res/layout app/src/main/java/com/nova/dm/{sniffer,engine,drive,storage}
+
+          cat << 'EOF' > settings.gradle.kts
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven("https://jitpack.io")
+                  maven("https://repo.clojars.org")
+              }
+          }
+          rootProject.name = "NovaDM"
+          include(":app")
+          EOF
+
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.9.2" apply false
+              id("org.jetbrains.kotlin.android") version "2.1.10" apply false
+          }
+          EOF
+
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+          android {
+              namespace = "com.nova.dm"
+              compileSdk = 35
+              defaultConfig {
+                  applicationId = "com.nova.dm"
+                  minSdk = 24
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+              buildTypes {
+                  release {
+                      isMinifyEnabled = true
+                      isShrinkResources = true
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                      signingConfig = signingConfigs.getByName("debug")
+                  }
+              }
+              compileOptions {
+                  isCoreLibraryDesugaringEnabled = true
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
+              buildFeatures { viewBinding = true }
+              packaging { resources.excludes += listOf("META-INF/INDEX.LIST", "META-INF/DEPENDENCIES") }
+          }
+          dependencies {
+              coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
+              implementation("androidx.core:core-ktx:1.15.0")
+              implementation("androidx.appcompat:appcompat:1.7.0")
+              implementation("com.google.android.material:material:1.12.0")
+              implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+              implementation("com.squareup.okhttp3:okhttp:4.12.0")
+              implementation("androidx.media3:media3-exoplayer:1.5.1")
+              implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
+              implementation("androidx.media3:media3-ui:1.5.1")
+              implementation("com.github.teamnewpipe:NewPipeExtractor:v0.27.1")
+              implementation("com.google.android.gms:play-services-auth:21.3.0")
+          }
+          EOF
+
+          cat << 'EOF' > app/proguard-rules.pro
+          -keepattributes *Annotation*
+          -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+          -keep class org.mozilla.javascript.** { *; }
+          -keep class org.mozilla.classfile.ClassFileWriter
+          -dontwarn org.mozilla.javascript.tools.**
+          -dontwarn org.jsoup.**
+          EOF
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <application
+                  android:allowBackup="false"
+                  android:label="NovaDM"
+                  android:usesCleartextTraffic="true"
+                  android:theme="@style/Theme.Material3.DayNight.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <activity
+                      android:name=".PlayerActivity"
+                      android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation"
+                      android:supportsPictureInPicture="true"
+                      android:exported="false" />
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp">
+              <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+                  <EditText android:id="@+id/urlInput" android:hint="URL / YouTube / Embed"
+                      android:singleLine="true" android:layout_weight="1" android:layout_width="0dp" android:layout_height="wrap_content"/>
+                  <Button android:id="@+id/btnGo" android:text="Go" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                  <Button android:id="@+id/btnSniffed" android:text="Catch(0)" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+              </LinearLayout>
+              <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+                  <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                  <Button android:id="@+id/btnAuthDrive" android:text="Link Drive" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                  <Button android:id="@+id/btnVault" android:text="Vault" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+              </LinearLayout>
+              <TextView android:id="@+id/statusText" android:text="Ready" android:textSize="12sp"
+                  android:layout_width="match_parent" android:layout_height="wrap_content"/>
+              <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_weight="1" android:layout_height="0dp"/>
+          </LinearLayout>
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/sniffer/SnifferWebView.kt
+          package com.nova.dm.sniffer
+
+          import android.annotation.SuppressLint
+          import android.webkit.*
+
+          data class SniffedMedia(val url: String, val mimeHint: String, val headers: Map<String, String>)
+
+          @SuppressLint("SetJavaScriptEnabled")
+          fun WebView.setupMediaSniffer(onMediaFound: (SniffedMedia) -> Unit) {
+              settings.apply {
+                  javaScriptEnabled = true
+                  domStorageEnabled = true
+                  mediaPlaybackRequiresUserGesture = false
+                  userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+              }
+              addJavascriptInterface(object {
+                  @JavascriptInterface
+                  fun onJsMedia(url: String, ref: String) {
+                      if (!url.startsWith("http")) return
+                      val p = ref.split("/")
+                      val origin = if (p.size >= 3) "${p[0]}//${p[2]}" else ref
+                      onMediaFound(SniffedMedia(url, "js", mapOf(
+                          "User-Agent" to settings.userAgentString, "Referer" to ref, "Origin" to origin
+                      )))
+                  }
+              }, "NovaSniff")
+              webViewClient = object : WebViewClient() {
+                  override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
+                      val u = req.url.toString(); val l = u.lowercase()
+                      if (l.contains(".m3u8") || l.contains(".mpd") || l.contains(".mp4") || l.contains(".mkv") || l.contains("mime=video")) {
+                          val h = req.requestHeaders.toMutableMap()
+                          CookieManager.getInstance().getCookie(u)?.takeIf { it.isNotBlank() }?.let { h["Cookie"] = it }
+                          if (!h.containsKey("User-Agent")) h["User-Agent"] = settings.userAgentString
+                          onMediaFound(SniffedMedia(u, "net", h))
+                      }
+                      return super.shouldInterceptRequest(view, req)
+                  }
+                  override fun onPageFinished(view: WebView, url: String) {
+                      evaluateJavascript("""
+                          (function(){
+                              if(window.__nH) return; window.__nH=true;
+                              const s=u=>{if(u&&typeof u==='string')NovaSniff.onJsMedia(u,location.href);};
+                              const f=window.fetch; window.fetch=function(...a){s(a[0]?.url||a[0]);return f.apply(this,a);};
+                              const o=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){s(u);return o.apply(this,arguments);};
+                              setInterval(()=>document.querySelectorAll('video,source').forEach(e=>s(e.src||e.currentSrc)),2000);
+                          })();
+                      """.trimIndent(), null)
+                  }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/engine/HlsEngine.kt
+          package com.nova.dm.engine
+
+          import kotlinx.coroutines.*
+          import okhttp3.HttpUrl.Companion.toHttpUrl
+          import okhttp3.OkHttpClient
+          import okhttp3.Request
+          import javax.crypto.Cipher
+          import javax.crypto.spec.IvParameterSpec
+          import javax.crypto.spec.SecretKeySpec
+
+          data class HlsVariant(val label: String, val url: String)
+
+          class HlsEngine(private val client: OkHttpClient) {
+              private fun getText(url: String, h: Map<String, String>): String {
+                  val r = Request.Builder().url(url).apply { h.forEach { (k, v) -> header(k, v) } }.build()
+                  return client.newCall(r).execute().use { if (!it.isSuccessful) error("HTTP ${it.code}"); it.body!!.string() }
+              }
+              private fun getBytes(url: String, h: Map<String, String>): ByteArray {
+                  val r = Request.Builder().url(url).apply { h.forEach { (k, v) -> header(k, v) } }.build()
+                  return client.newCall(r).execute().use { if (!it.isSuccessful) error("HTTP ${it.code}"); it.body!!.bytes() }
+              }
+              fun parseVariants(m3u8: String, h: Map<String, String>): List<HlsVariant> {
+                  val txt = getText(m3u8, h); val base = m3u8.toHttpUrl(); val lines = txt.lines().map { it.trim() }
+                  if (!txt.contains("#EXT-X-STREAM-INF")) return listOf(HlsVariant("Default", m3u8))
+                  val out = mutableListOf<HlsVariant>()
+                  for (i in lines.indices) if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
+                      val res = Regex("RESOLUTION=(\\d+x\\d+)").find(lines[i])?.groupValues?.get(1) ?: "Stream"
+                      val next = lines.drop(i + 1).firstOrNull { it.isNotEmpty() && !it.startsWith("#") } ?: continue
+                      out += HlsVariant(res, base.resolve(next).toString())
+                  }
+                  return out.ifEmpty { listOf(HlsVariant("Default", m3u8)) }
+              }
+              suspend fun downloadSegments(
+                  url: String, h: Map<String, String>, onChunk: suspend (ByteArray) -> Unit, onProg: (Int, Int) -> Unit
+              ) = coroutineScope {
+                  val lines = getText(url, h).lines().map { it.trim() }; val base = url.toHttpUrl()
+                  var key: ByteArray? = null; var iv: ByteArray? = null
+                  lines.firstOrNull { it.startsWith("#EXT-X-KEY:METHOD=AES-128") }?.let { kl ->
+                      Regex("URI=\"([^\"]+)\"").find(kl)?.groupValues?.get(1)?.let { key = getBytes(base.resolve(it).toString(), h) }
+                      Regex("IV=0x([0-9a-fA-F]+)").find(kl)?.groupValues?.get(1)?.let { hx -> iv = hx.chunked(2).map { it.toInt(16).toByte() }.toByteArray() }
+                  }
+                  val segs = lines.filter { it.isNotEmpty() && !it.startsWith("#") }.map { base.resolve(it).toString() }
+                  require(segs.isNotEmpty()) { "No segments" }
+                  lines.firstOrNull { it.startsWith("#EXT-X-MAP:") }?.let { ml ->
+                      Regex("URI=\"([^\"]+)\"").find(ml)?.groupValues?.get(1)?.let { onChunk(getBytes(base.resolve(it).toString(), h)) }
+                  }
+                  var done = 0
+                  for (s in segs.indices step 4) {
+                      val slice = segs.subList(s, minOf(s + 4, segs.size))
+                      val got = slice.mapIndexed { idx, su ->
+                          async(Dispatchers.IO) {
+                              var d = getBytes(su, h)
+                              if (key != null) {
+                                  val seqIv = iv ?: ByteArray(16).apply {
+                                      val q = s + idx; this[12]=(q shr 24).toByte(); this[13]=(q shr 16).toByte(); this[14]=(q shr 8).toByte(); this[15]=q.toByte()
+                                  }
+                                  val c = Cipher.getInstance("AES/CBC/PKCS5Padding")
+                                  c.init(Cipher.DECRYPT_MODE, SecretKeySpec(key, "AES"), IvParameterSpec(seqIv))
+                                  d = c.doFinal(d)
+                              }
+                              d
+                          }
+                      }.awaitAll()
+                      for (b in got) { onChunk(b); done++; onProg(done, segs.size) }
+                  }
+              }
+              suspend fun streamDirectUrl(
+                  url: String, h: Map<String, String>, onChunk: suspend (ByteArray) -> Unit, onProg: (Long, Long) -> Unit
+              ) = withContext(Dispatchers.IO) {
+                  val r = Request.Builder().url(url).apply { h.forEach { (k, v) -> header(k, v) } }.build()
+                  client.newCall(r).execute().use { resp ->
+                      if (!resp.isSuccessful) error("HTTP ${resp.code}")
+                      val body = resp.body!!; val tot = body.contentLength(); val ins = body.byteStream()
+                      val buf = ByteArray(256 * 1024); var read = 0L
+                      while (true) { val n = ins.read(buf); if (n <= 0) break; onChunk(buf.copyOf(n)); read += n; onProg(read, tot) }
+                  }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/engine/MuxerEngine.kt
+          package com.nova.dm.engine
+
+          import android.media.*
+          import java.io.File
+          import java.nio.ByteBuffer
+
+          object MuxerEngine {
+              fun muxVideoAndAudio(vFile: File, aFile: File, outMp4: File) {
+                  val mx = MediaMuxer(outMp4.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+                  val vE = MediaExtractor().apply { setDataSource(vFile.absolutePath) }
+                  val aE = MediaExtractor().apply { setDataSource(aFile.absolutePath) }
+                  val vt = (0 until vE.trackCount).first { vE.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true }
+                  val at = (0 until aE.trackCount).first { aE.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true }
+                  vE.selectTrack(vt); aE.selectTrack(at)
+                  val ov = mx.addTrack(vE.getTrackFormat(vt)); val oa = mx.addTrack(aE.getTrackFormat(at))
+                  mx.start()
+                  fun cp(ext: MediaExtractor, out: Int) {
+                      val buf = ByteBuffer.allocate(1024 * 1024); val info = MediaCodec.BufferInfo()
+                      while (true) {
+                          val sz = ext.readSampleData(buf, 0); if (sz < 0) break
+                          info.set(0, sz, ext.sampleTime, if ((ext.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC) != 0) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0)
+                          mx.writeSampleData(out, buf, info); ext.advance()
+                      }
+                  }
+                  cp(vE, ov); cp(aE, oa); vE.release(); aE.release(); mx.stop(); mx.release()
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/engine/YtExtractor.kt
+          package com.nova.dm.engine
+
+          import okhttp3.OkHttpClient
+          import okhttp3.Request
+          import okhttp3.RequestBody.Companion.toRequestBody
+          import org.schabi.newpipe.extractor.NewPipe
+          import org.schabi.newpipe.extractor.ServiceList
+          import org.schabi.newpipe.extractor.downloader.Downloader
+          import org.schabi.newpipe.extractor.downloader.Request as NpReq
+          import org.schabi.newpipe.extractor.downloader.Response as NpResp
+          import org.schabi.newpipe.extractor.stream.StreamInfo
+
+          data class YtOption(val label: String, val videoUrl: String, val audioUrl: String?)
+
+          object YtExtractor {
+              private var ready = false
+              private fun init(c: OkHttpClient) {
+                  if (ready) return
+                  NewPipe.init(object : Downloader() {
+                      override fun execute(req: NpReq): NpResp {
+                          val rb = Request.Builder().url(req.url())
+                          req.headers().forEach { (k, vs) -> vs.forEach { rb.addHeader(k, it) } }
+                          val body = req.dataToSend()?.toRequestBody()
+                          when (req.httpMethod()) {
+                              "POST" -> rb.post(body ?: ByteArray(0).toRequestBody())
+                              "HEAD" -> rb.head()
+                              else -> rb.get()
+                          }
+                          c.newCall(rb.build()).execute().use { r ->
+                              return NpResp(r.code, r.message, r.headers.toMultimap(), r.body?.string(), r.request.url.toString())
+                          }
+                      }
+                  })
+                  ready = true
+              }
+              fun extract(url: String, c: OkHttpClient): Pair<String, List<YtOption>> {
+                  init(c)
+                  val info = StreamInfo.getInfo(ServiceList.YouTube, url)
+                  val bestAudio = info.audioStreams.maxByOrNull { it.averageBitrate }?.content
+                  val opts = mutableListOf<YtOption>()
+                  info.videoStreams.forEach { opts += YtOption("${it.resolution} (Muxed)", it.content, null) }
+                  info.videoOnlyStreams.filter { it.format?.name == "MPEG_4" }.forEach {
+                      if (bestAudio != null) opts += YtOption("${it.resolution} HD", it.content, bestAudio)
+                  }
+                  return info.name to opts
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/drive/DriveStreamUploader.kt
+          package com.nova.dm.drive
+
+          import okhttp3.MediaType.Companion.toMediaType
+          import okhttp3.OkHttpClient
+          import okhttp3.Request
+          import okhttp3.RequestBody.Companion.toRequestBody
+          import org.json.JSONObject
+          import java.io.ByteArrayOutputStream
+
+          class DriveStreamUploader(
+              private val client: OkHttpClient, private val token: String, name: String, mime: String = "video/mp4"
+          ) {
+              private val sessionUri: String
+              private val buf = ByteArrayOutputStream()
+              private var offset = 0L
+              private val gran = 256 * 1024
+              private val limit = 8 * gran
+
+              init {
+                  val meta = JSONObject().put("name", name).put("mimeType", mime).toString()
+                  val req = Request.Builder().url("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable")
+                      .header("Authorization", "Bearer $token").header("X-Upload-Content-Type", mime)
+                      .post(meta.toRequestBody("application/json; charset=utf-8".toMediaType())).build()
+                  client.newCall(req).execute().use { r ->
+                      if (!r.isSuccessful) error("Drive ${r.code}")
+                      sessionUri = r.header("Location") ?: error("No Location")
+                  }
+              }
+              fun writeChunk(b: ByteArray) {
+                  buf.write(b)
+                  if (buf.size() >= limit) {
+                      val all = buf.toByteArray(); val len = (all.size / gran) * gran
+                      put(all.copyOfRange(0, len), offset, "*"); offset += len; buf.reset()
+                      if (all.size > len) buf.write(all, len, all.size - len)
+                  }
+              }
+              fun finish() {
+                  val rem = buf.toByteArray(); val tot = offset + rem.size
+                  if (rem.isNotEmpty()) put(rem, offset, tot.toString())
+                  else {
+                      val r = Request.Builder().url(sessionUri).header("Content-Range", "bytes */$tot").put(ByteArray(0).toRequestBody(null)).build()
+                      client.newCall(r).execute().use { if (it.code !in listOf(200, 201)) error("Finish ${it.code}") }
+                  }
+              }
+              private fun put(d: ByteArray, s: Long, tot: String) {
+                  val r = Request.Builder().url(sessionUri).header("Content-Range", "bytes $s-${s + d.size - 1}/$tot")
+                      .put(d.toRequestBody("application/octet-stream".toMediaType())).build()
+                  client.newCall(r).execute().use { if (it.code !in listOf(200, 201, 308)) error("Chunk ${it.code}") }
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/storage/VaultManager.kt
+          package com.nova.dm.storage
+
+          import android.content.ContentValues
+          import android.content.Context
+          import android.provider.MediaStore
+          import java.io.File
+
+          class VaultManager(private val ctx: Context) {
+              val dir: File = File(ctx.filesDir, "vault").apply { mkdirs() }
+              fun newFile(n: String) = File(dir, n.replace(Regex("[^a-zA-Z0-9._-]"), "_"))
+              fun listVideos(): List<File> = dir.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedByDescending { it.lastModified() } ?: emptyList()
+              fun exportToGallery(f: File): Boolean {
+                  val v = ContentValues().apply {
+                      put(MediaStore.Video.Media.DISPLAY_NAME, f.name)
+                      put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                      put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/NovaDM")
+                  }
+                  val uri = ctx.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, v) ?: return false
+                  ctx.contentResolver.openOutputStream(uri)?.use { out -> f.inputStream().use { it.copyTo(out) } }
+                  return true
+              }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/PlayerActivity.kt
+          package com.nova.dm
+
+          import android.app.PictureInPictureParams
+          import android.media.AudioManager
+          import android.os.Build
+          import android.os.Bundle
+          import android.util.Rational
+          import android.view.*
+          import android.widget.Toast
+          import androidx.appcompat.app.AppCompatActivity
+          import androidx.media3.common.MediaItem
+          import androidx.media3.common.PlaybackParameters
+          import androidx.media3.exoplayer.ExoPlayer
+          import androidx.media3.ui.PlayerView
+          import kotlin.math.abs
+
+          class PlayerActivity : AppCompatActivity() {
+              private lateinit var player: ExoPlayer
+              private lateinit var pv: PlayerView
+              private var sIdx = 1
+              private val speeds = floatArrayOf(0.5f, 1.0f, 1.25f, 1.5f, 2.0f)
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  pv = PlayerView(this).apply { layoutParams = ViewGroup.LayoutParams(-1, -1); setShowSubtitleButton(true) }
+                  setContentView(pv)
+                  val path = intent.getStringExtra("path") ?: return finish()
+                  player = ExoPlayer.Builder(this).build().also {
+                      pv.player = it; it.setMediaItem(MediaItem.fromUri(path)); it.prepare(); it.playWhenReady = true
+                  }
+                  val am = getSystemService(AUDIO_SERVICE) as AudioManager
+                  val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+                      override fun onDoubleTap(e: MotionEvent): Boolean {
+                          val d = if (e.x < pv.width / 2f) -10_000L else 10_000L
+                          player.seekTo((player.currentPosition + d).coerceAtLeast(0))
+                          Toast.makeText(this@PlayerActivity, if (d > 0) "+10s" else "-10s", Toast.LENGTH_SHORT).show()
+                          return true
+                      }
+                      override fun onLongPress(e: MotionEvent) {
+                          sIdx = (sIdx + 1) % speeds.size
+                          player.playbackParameters = PlaybackParameters(speeds[sIdx])
+                          Toast.makeText(this@PlayerActivity, "${speeds[sIdx]}x", Toast.LENGTH_SHORT).show()
+                      }
+                      override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
+                          if (abs(dy) <= abs(dx)) return false
+                          val pct = (dy / pv.height) * 1.5f
+                          if (e2.x < pv.width / 2f) {
+                              val lp = window.attributes
+                              lp.screenBrightness = (if (lp.screenBrightness < 0) 0.5f else lp.screenBrightness + pct).coerceIn(0.05f, 1f)
+                              window.attributes = lp
+                          } else {
+                              val mx = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                              val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                              am.setStreamVolume(AudioManager.STREAM_MUSIC, (cur + (pct * mx).toInt()).coerceIn(0, mx), AudioManager.FLAG_SHOW_UI)
+                          }
+                          return true
+                      }
+                  })
+                  pv.setOnTouchListener { _, ev -> gd.onTouchEvent(ev) }
+              }
+              override fun onUserLeaveHint() {
+                  if (Build.VERSION.SDK_INT >= 26 && player.isPlaying) {
+                      enterPictureInPictureMode(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build())
+                  }
+              }
+              override fun onStop() { super.onStop(); player.pause() }
+              override fun onDestroy() { super.onDestroy(); player.release() }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/nova/dm/MainActivity.kt
+          package com.nova.dm
+
+          import android.app.Activity
+          import android.content.Intent
+          import android.os.Bundle
+          import android.widget.Toast
+          import androidx.activity.result.IntentSenderRequest
+          import androidx.activity.result.contract.ActivityResultContracts
+          import androidx.appcompat.app.AlertDialog
+          import androidx.appcompat.app.AppCompatActivity
+          import androidx.lifecycle.lifecycleScope
+          import com.google.android.gms.auth.api.identity.AuthorizationRequest
+          import com.google.android.gms.auth.api.identity.Identity
+          import com.google.android.gms.common.api.Scope
+          import com.nova.dm.databinding.ActivityMainBinding
+          import com.nova.dm.drive.DriveStreamUploader
+          import com.nova.dm.engine.*
+          import com.nova.dm.sniffer.*
+          import com.nova.dm.storage.VaultManager
+          import kotlinx.coroutines.*
+          import okhttp3.OkHttpClient
+          import java.io.File
+          import java.util.concurrent.TimeUnit
+
+          class MainActivity : AppCompatActivity() {
+              private lateinit var b: ActivityMainBinding
+              private lateinit var vault: VaultManager
+              private val client = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
+              private val hls = HlsEngine(client)
+              private val caught = linkedMapOf<String, SniffedMedia>()
+              private var driveToken: String? = null
+
+              private val driveLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
+                  if (res.resultCode == Activity.RESULT_OK && res.data != null) {
+                      driveToken = Identity.getAuthorizationClient(this).getAuthorizationResultFromIntent(res.data!!).accessToken
+                      Toast.makeText(this, "Drive Connected", Toast.LENGTH_SHORT).show()
+                  }
+              }
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  b = ActivityMainBinding.inflate(layoutInflater); setContentView(b.root)
+                  vault = VaultManager(this)
+                  b.webView.setupMediaSniffer { m ->
+                      if (!caught.containsKey(m.url)) { caught[m.url] = m; runOnUiThread { b.btnSniffed.text = "Catch(${caught.size})" } }
+                  }
+                  b.btnGo.setOnClickListener {
+                      val u = b.urlInput.text.toString().trim()
+                      if (u.contains("youtube.com") || u.contains("youtu.be")) handleYt(u)
+                      else { caught.clear(); b.btnSniffed.text = "Catch(0)"; b.webView.loadUrl(if (u.startsWith("http")) u else "https://$u") }
+                  }
+                  b.btnSniffed.setOnClickListener {
+                      val items = caught.values.toList(); if (items.isEmpty()) return@setOnClickListener
+                      AlertDialog.Builder(this).setTitle("Detected Streams")
+                          .setItems(items.map { it.url.takeLast(55) }.toTypedArray()) { _, i -> startFetch(items[i]) }.show()
+                  }
+                  b.btnAuthDrive.setOnClickListener {
+                      val req = AuthorizationRequest.builder().setRequestedScopes(listOf(Scope("https://www.googleapis.com/auth/drive.file"))).build()
+                      Identity.getAuthorizationClient(this).authorize(req).addOnSuccessListener { res ->
+                          if (res.hasResolution()) driveLauncher.launch(IntentSenderRequest.Builder(res.pendingIntent!!.intentSender).build())
+                          else { driveToken = res.accessToken; Toast.makeText(this, "Drive Connected", Toast.LENGTH_SHORT).show() }
+                      }.addOnFailureListener { Toast.makeText(this, "Auth Err: ${it.message}", Toast.LENGTH_LONG).show() }
+                  }
+                  b.btnVault.setOnClickListener { showVault() }
+              }
+              private fun startFetch(m: SniffedMedia) = lifecycleScope.launch(Dispatchers.IO) {
+                  try {
+                      if (m.url.contains(".m3u8", true)) {
+                          val vs = hls.parseVariants(m.url, m.headers)
+                          withContext(Dispatchers.Main) {
+                              AlertDialog.Builder(this@MainActivity).setTitle("Quality")
+                                  .setItems(vs.map { it.label }.toTypedArray()) { _, i ->
+                                      runStream(vs[i].url, m.headers, true, "video_${System.currentTimeMillis()}.mp4")
+                                  }.show()
+                          }
+                      } else runStream(m.url, m.headers, false, "video_${System.currentTimeMillis()}.mp4")
+                  } catch (e: Exception) { withContext(Dispatchers.Main) { b.statusText.text = "Err: ${e.message}" } }
+              }
+              private fun runStream(url: String, hdrs: Map<String, String>, isHls: Boolean, name: String) = lifecycleScope.launch(Dispatchers.IO) {
+                  val toDrive = b.switchGDrive.isChecked; val tok = driveToken
+                  if (toDrive && tok == null) { withContext(Dispatchers.Main) { Toast.makeText(this@MainActivity, "Link Drive first", Toast.LENGTH_SHORT).show() }; return@launch }
+                  try {
+                      val up = if (toDrive) DriveStreamUploader(client, tok!!, name) else null
+                      val fos = if (!toDrive) vault.newFile(name).outputStream() else null
+                      val wr: suspend (ByteArray) -> Unit = { bytes -> up?.writeChunk(bytes) ?: fos?.write(bytes) }
+                      if (isHls) hls.downloadSegments(url, hdrs, wr) { d, t -> runOnUiThread { b.statusText.text = "HLS: $d/$t" } }
+                      else hls.streamDirectUrl(url, hdrs, wr) { g, _ -> runOnUiThread { b.statusText.text = "${g / 1024}KB" } }
+                      up?.finish(); fos?.close()
+                      withContext(Dispatchers.Main) { b.statusText.text = "Done: $name" }
+                  } catch (e: Exception) { withContext(Dispatchers.Main) { b.statusText.text = "Fail: ${e.message}" } }
+              }
+              private fun handleYt(url: String) = lifecycleScope.launch(Dispatchers.IO) {
+                  try {
+                      val (title, opts) = YtExtractor.extract(url, client)
+                      withContext(Dispatchers.Main) {
+                          AlertDialog.Builder(this@MainActivity).setTitle(title)
+                              .setItems(opts.map { it.label }.toTypedArray()) { _, i -> dlYt(title, opts[i]) }.show()
+                      }
+                  } catch (e: Exception) { withContext(Dispatchers.Main) { b.statusText.text = "YT Err: ${e.message}" } }
+              }
+              private fun dlYt(title: String, opt: YtOption) = lifecycleScope.launch(Dispatchers.IO) {
+                  if (opt.audioUrl == null) { runStream(opt.videoUrl, emptyMap(), false, "${title.take(25)}.mp4"); return@launch }
+                  val tv = File(cacheDir, "v.tmp"); val ta = File(cacheDir, "a.tmp")
+                  val out = vault.newFile("${title.take(25)}_${System.currentTimeMillis()}.mp4")
+                  try {
+                      tv.outputStream().use { o -> hls.streamDirectUrl(opt.videoUrl, emptyMap(), { o.write(it) }) { _, _ -> } }
+                      ta.outputStream().use { o -> hls.streamDirectUrl(opt.audioUrl, emptyMap(), { o.write(it) }) { _, _ -> } }
+                      MuxerEngine.muxVideoAndAudio(tv, ta, out)
+                      if (b.switchGDrive.isChecked && driveToken != null) {
+                          val up = DriveStreamUploader(client, driveToken!!, out.name)
+                          out.inputStream().use { i -> val bf = ByteArray(256 * 1024); while (true) { val n = i.read(bf); if (n <= 0) break; up.writeChunk(bf.copyOf(n)) } }
+                          up.finish(); out.delete()
+                      }
+                      withContext(Dispatchers.Main) { b.statusText.text = "YT Ready: ${out.name}" }
+                  } finally { tv.delete(); ta.delete() }
+              }
+              private fun showVault() {
+                  val files = vault.listVideos()
+                  if (files.isEmpty()) { Toast.makeText(this, "Vault Empty", Toast.LENGTH_SHORT).show(); return }
+                  AlertDialog.Builder(this).setTitle("Vault")
+                      .setItems(files.map { "${it.name} (${it.length() / 1048576}MB)" }.toTypedArray()) { _, i ->
+                          val f = files[i]
+                          AlertDialog.Builder(this).setTitle(f.name)
+                              .setPositiveButton("Play") { _, _ -> startActivity(Intent(this, PlayerActivity::class.java).putExtra("path", f.absolutePath)) }
+                              .setNeutralButton("Copy to Gallery") { _, _ ->
+                                  Toast.makeText(this, if (vault.exportToGallery(f)) "Saved to Movies/NovaDM" else "Err", Toast.LENGTH_SHORT).show()
+                              }
+                              .setNegativeButton("Delete") { _, _ -> f.delete() }.show()
+                      }.show()
+              }
+          }
+          EOF
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.11.1
+
+      - name: Build APKs
+        run: gradle assembleDebug assembleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NovaDM-APKs
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
