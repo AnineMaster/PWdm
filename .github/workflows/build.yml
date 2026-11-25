@@ -3,6 +3,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,7 +36,7 @@ jobs:
                   maven("https://repo.clojars.org")
               }
           }
-          rootProject.name = "NovaDM"
+          rootProject.name = "PWdm"
           include(":app")
           EOF
 
@@ -108,7 +111,7 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
               <application
                   android:allowBackup="false"
-                  android:label="NovaDM"
+                  android:label="PWdm"
                   android:usesCleartextTraffic="true"
                   android:theme="@style/Theme.Material3.DayNight.NoActionBar">
                   <activity android:name=".MainActivity" android:exported="true">
@@ -430,7 +433,7 @@ jobs:
                   val v = ContentValues().apply {
                       put(MediaStore.Video.Media.DISPLAY_NAME, f.name)
                       put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-                      if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/NovaDM")
+                      if (Build.VERSION.SDK_INT >= 29) put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/PWdm")
                   }
                   val uri = ctx.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, v) ?: return false
                   ctx.contentResolver.openOutputStream(uri)?.use { out -> f.inputStream().use { it.copyTo(out) } }
@@ -636,7 +639,7 @@ jobs:
                           AlertDialog.Builder(this).setTitle(f.name)
                               .setPositiveButton("Play") { _, _ -> startActivity(Intent(this, PlayerActivity::class.java).putExtra("path", f.absolutePath)) }
                               .setNeutralButton("Copy to Gallery") { _, _ ->
-                                  Toast.makeText(this, if (vault.exportToGallery(f)) "Saved to Movies/NovaDM" else "Err", Toast.LENGTH_SHORT).show()
+                                  Toast.makeText(this, if (vault.exportToGallery(f)) "Saved to Movies/PWdm" else "Err", Toast.LENGTH_SHORT).show()
                               }
                               .setNegativeButton("Delete") { _, _ -> f.delete() }.show()
                       }.show()
@@ -661,12 +664,28 @@ jobs:
       - name: Print Exact Failure
         if: failure()
         run: |
-          echo "=== EXACT ERROR ==="
-          grep -n -C 5 -E "FAILURE:|What went wrong:|Execution failed|^e: " build.log | tail -n 60
+          ERR=$(grep -E "FAILURE:|What went wrong:|Execution failed|^e: " build.log | head -n 5 | tr '\n' ' ')
+          echo "::error::$ERR"
+          tail -n 60 build.log
+
+      - name: Prepare APK Files
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/*.apk dist/PWdm-debug.apk
+          cp app/build/outputs/apk/release/*.apk dist/PWdm-release.apk
+          ls -lh dist/
 
       - uses: actions/upload-artifact@v6
         with:
           name: PWdm-APKs
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            app/build/outputs/apk/release/*.apk
+          path: dist/*.apk
+
+      - name: Publish to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.${{ github.run_number }}.${{ github.run_attempt }}"
+          gh release create "$TAG" dist/*.apk \
+            --title "PWdm $TAG" \
+            --notes "Direct APK download (PWdm-release.apk recommended)" \
+            --latest
