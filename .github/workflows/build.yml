@@ -1,4 +1,4 @@
-name: Build PWdm v3.1 Turbo APK
+name: Build PWdm v3.2 APK
 on:
   push:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Generate PWdm v3.1 Project
+      - name: Generate PWdm v3.2 Project
         run: |
           mkdir -p app/src/main/res/layout app/src/main/java/com/nova/dm/{sniffer,engine,drive,storage}
 
@@ -54,8 +54,8 @@ jobs:
                   applicationId = "com.nova.dm"
                   minSdk = 24
                   targetSdk = 35
-                  versionCode = 31
-                  versionName = "3.1-Turbo"
+                  versionCode = 32
+                  versionName = "3.2-Turbo"
               }
               splits {
                   abi {
@@ -90,9 +90,11 @@ jobs:
               implementation("com.google.android.material:material:1.12.0")
               implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
               implementation("com.squareup.okhttp3:okhttp:4.12.0")
-              implementation("androidx.media3:media3-exoplayer:1.5.1")
-              implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
-              implementation("androidx.media3:media3-ui:1.5.1")
+              val m3 = "1.5.1"
+              implementation("androidx.media3:media3-exoplayer:$m3")
+              implementation("androidx.media3:media3-exoplayer-hls:$m3")
+              implementation("androidx.media3:media3-datasource-okhttp:$m3")
+              implementation("androidx.media3:media3-ui:$m3")
               implementation("com.github.teamnewpipe:NewPipeExtractor:v0.27.1")
               implementation("com.google.android.gms:play-services-auth:21.3.0")
           }
@@ -159,14 +161,13 @@ jobs:
                           android:layout_width="wrap_content" android:layout_height="wrap_content">
                           <Button android:id="@+id/btnSniffed" android:text="Qualities(0)" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
                           <Button android:id="@+id/btnThreads" android:text="64T" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
-                          <Button android:id="@+id/btnAd" android:text="Ad:ON" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnAd" android:text="Ad:MAX" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
                           <Button android:id="@+id/btnDesk" android:text="Mob" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
-                          <Switch android:id="@+id/switchGDrive" android:text="GDrive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
-                          <Button android:id="@+id/btnAuthDrive" android:text="Link" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
+                          <Button android:id="@+id/btnAuthDrive" android:text="Link Drive" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
                           <Button android:id="@+id/btnVault" android:text="Vault" android:textSize="11sp" android:layout_width="wrap_content" android:layout_height="34dp"/>
                       </LinearLayout>
                   </HorizontalScrollView>
-                  <TextView android:id="@+id/statusText" android:text="Ready (64-Thread Turbo)" android:textSize="11sp"
+                  <TextView android:id="@+id/statusText" android:text="Ready (Stream + 64-Thread Turbo)" android:textSize="11sp"
                       android:maxLines="1" android:ellipsize="end" android:layout_width="match_parent" android:layout_height="wrap_content"/>
                   <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_weight="1" android:layout_height="0dp"/>
               </LinearLayout>
@@ -189,18 +190,21 @@ jobs:
                   "google-analytics.com", "adservice.google.com", "adnxs.com", "adsafeprotected.com",
                   "popads.net", "popcash.net", "propellerads.com", "propellerclick.com", "onclickalgo.com",
                   "adsterra.com", "highperformanceformat.com", "effectivegatecpm.com", "profitablegatecpm.com",
-                  "exoclick.com", "exosrv.com", "realsrv.com", "juicyads.com", "trafficjunky.net",
+                  "exoclick.com", "exosrv.com", "realsrv.com", "magsrv.com", "juicyads.com", "trafficjunky.net",
                   "hilltopads.net", "clickadu.com", "monetag.com", "alwingulla.com", "taboola.com",
                   "outbrain.com", "mgid.com", "criteo.com", "pubmatic.com", "rubiconproject.com",
                   "openx.net", "casalemedia.com", "scorecardresearch.com", "mc.yandex.ru",
                   "tsyndicate.com", "adskeeper.co.uk", "adtng.com", "tsyndicate.net", "acscdn.com",
                   "histats.com", "amung.us", "onclkds.com", "pushub.net", "revcontent.com",
                   "bidvertiser.com", "amazon-adsystem.com", "moatads.com", "quantserve.com",
-                  "chartbeat.com", "onclickperformance.com", "wpadmngr.com", "bidgear.com", "adcash.com", "teads.tv"
+                  "chartbeat.com", "onclickperformance.com", "wpadmngr.com", "bidgear.com", "adcash.com",
+                  "teads.tv", "twinrdengine.com", "a-ads.com", "coinzilla.com", "admaven.com",
+                  "adspyglass.com", "galaksion.com", "evadav.com", "richpush.co", "pushame.com",
+                  "onclickmax.com", "smartadserver.com", "3lift.com", "sharethrough.com", "lijit.com"
               )
               private val adPathHints = listOf(
                   "/pagead/", "vast.xml", "vpaid", "get_midroll_info", "/api/stats/ads", "ptracking",
-                  "/popunder", "popads", "googlesyndication", "doubleclick"
+                  "/popunder", "popads", "googlesyndication", "doubleclick", "ad_break", "popunder.js"
               )
 
               fun isAdUrl(url: String): Boolean {
@@ -211,7 +215,7 @@ jobs:
                   }
                   val host = try { Uri.parse(u).host.orEmpty() } catch (_: Exception) { "" }
                   if (adDomains.any { host == it || host.endsWith(".$it") }) return true
-                  if (host.startsWith("ads.") || host.startsWith("pop.") || host.startsWith("pixel.")) return true
+                  if (host.startsWith("ads.") || host.startsWith("pop.") || host.startsWith("pixel.") || host.startsWith("adserver.")) return true
                   return adPathHints.any { u.contains(it) }
               }
 
@@ -243,12 +247,14 @@ jobs:
               browserRoot: View,
               onUrlChange: (String) -> Unit,
               onMediaFound: (SniffedMedia) -> Unit
-          ) {
+          ): () -> Boolean {
               setLayerType(View.LAYER_TYPE_HARDWARE, null)
               settings.apply {
                   javaScriptEnabled = true
                   domStorageEnabled = true
                   databaseEnabled = true
+                  allowContentAccess = true
+                  allowFileAccess = true
                   useWideViewPort = true
                   loadWithOverviewMode = true
                   builtInZoomControls = true
@@ -280,12 +286,11 @@ jobs:
               var customView: View? = null
               var customCallback: WebChromeClient.CustomViewCallback? = null
 
-              webChromeClient = object : WebChromeClient() {
+              val chromeClient = object : WebChromeClient() {
                   override fun onProgressChanged(view: WebView, newProgress: Int) {
                       progressBar.visibility = if (newProgress in 1..99) View.VISIBLE else View.GONE
                       progressBar.progress = newProgress
                   }
-                  // Kill popup windows / popunders without breaking normal links
                   override fun onCreateWindow(view: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean = false
                   override fun onJsAlert(view: WebView, url: String, message: String, result: JsResult): Boolean { result.cancel(); return true }
                   override fun onJsConfirm(view: WebView, url: String, message: String, result: JsResult): Boolean { result.cancel(); return true }
@@ -299,11 +304,11 @@ jobs:
                       fullscreenBox.visibility = View.GONE; browserRoot.visibility = View.VISIBLE
                   }
               }
+              webChromeClient = chromeClient
 
               webViewClient = object : WebViewClient() {
                   override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean {
                       val u = req.url.toString()
-                      // Block intent://, market:// app hijackers & known ad domains, but allow normal redirects & iframes
                       if (!u.startsWith("http://") && !u.startsWith("https://")) return true
                       if (AdBlockEngine.isAdUrl(u)) return true
                       return false
@@ -335,10 +340,25 @@ jobs:
                       val adJs = if (AdBlockEngine.enabled) """
                           if(!document.getElementById('__nCss')){
                               const st=document.createElement('style'); st.id='__nCss';
-                              st.textContent='ins.adsbygoogle,[id*="google_ads"],[class*="ad-banner"],[class*="popunder"],ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,.ytp-ad-module,.ytp-ad-overlay-container{display:none!important;height:0!important;}';
+                              st.textContent='ins.adsbygoogle,[id*="google_ads"],[class*="ad-banner"],[class*="popunder"],[id*="popunder"],iframe[src*="ad"],ytd-ad-slot-renderer,ytm-promoted-sparkles-web-renderer,.ytp-ad-module,.ytp-ad-overlay-container{display:none!important;height:0!important;pointer-events:none!important;}';
                               document.head?.appendChild(st);
                           }
                           window.open = function(){ return null; };
+                          // Remove invisible clickjack overlays covering video players
+                          const killOverlays = () => {
+                              document.querySelectorAll('div,a,span').forEach(el=>{
+                                  const cs=getComputedStyle(el);
+                                  const z=parseInt(cs.zIndex)||0;
+                                  if(z>=100 && (cs.position==='fixed'||cs.position==='absolute') && !el.querySelector('video') && el.tagName!=='VIDEO'){
+                                      const op=parseFloat(cs.opacity);
+                                      if(op<0.15 || (cs.backgroundColor==='rgba(0, 0, 0, 0)' && el.innerText.trim().length===0 && el.offsetHeight>120)){
+                                          el.style.pointerEvents='none'; el.remove();
+                                      }
+                                  }
+                              });
+                              document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
+                          };
+                          killOverlays(); setTimeout(killOverlays, 1800);
                       """ else ""
                       evaluateJavascript("""
                           (function(){
@@ -357,10 +377,9 @@ jobs:
                                   txt=txt.replace(/\\\//g,'/');
                                   const ms=txt.match(/https?:\/\/[^"'\s<>\\]+?\.(?:m3u8|mp4|mpd)(?:\?[^"'\s<>\\]*)?/gi)||[];
                                   ms.slice(0,25).forEach(m=>emit(m,'JSON'));
-                                  document.querySelectorAll('a[target="_blank"]').forEach(a=>a.removeAttribute('target'));
                               };
                               scanOnce();
-                              setTimeout(scanOnce, 2500);
+                              setTimeout(scanOnce, 2200);
                               if(window.__nH) return; window.__nH=true;
                               const f=window.fetch; window.fetch=function(...a){const u=a[0]?.url||a[0]; if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))emit(u,'Fetch'); return f.apply(this,a);};
                               const o=XMLHttpRequest.prototype.open; XMLHttpRequest.prototype.open=function(m,u){if(typeof u==='string'&&/\.(m3u8|mp4|mpd)/i.test(u))emit(u,'XHR'); return o.apply(this,arguments);};
@@ -372,6 +391,9 @@ jobs:
                           })();
                       """.trimIndent(), null)
                   }
+              }
+              return {
+                  if (customView != null) { chromeClient.onHideCustomView(); true } else false
               }
           }
           EOF
@@ -410,6 +432,7 @@ jobs:
           package com.nova.dm.engine
 
           import com.nova.dm.sniffer.SniffedMedia
+          import kotlinx.coroutines.*
           import okhttp3.HttpUrl.Companion.toHttpUrl
           import okhttp3.OkHttpClient
           import okhttp3.Request
@@ -420,6 +443,7 @@ jobs:
           import org.schabi.newpipe.extractor.downloader.Request as NpReq
           import org.schabi.newpipe.extractor.downloader.Response as NpResp
           import org.schabi.newpipe.extractor.stream.StreamInfo
+          import java.util.concurrent.TimeUnit
 
           data class QualityOption(
               val title: String,
@@ -471,7 +495,7 @@ jobs:
                   val out = mutableListOf<QualityOption>()
                   info.videoStreams.forEach {
                       val h = it.resolution.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 360
-                      out += QualityOption(title, "${it.resolution} | MP4 | Muxed", h, it.content, null, false, emptyMap(), true)
+                      out += QualityOption(title, "${it.resolution} | MP4 | Direct", h, it.content, null, false, emptyMap(), true)
                   }
                   info.videoOnlyStreams.filter { it.format?.name == "MPEG_4" }.forEach {
                       if (bestAudio != null) {
@@ -485,54 +509,55 @@ jobs:
                   return out.sortedByDescending { it.sortHeight }
               }
 
-              fun probeSniffed(
-                  pageTitle: String?, pageUrl: String, list: List<SniffedMedia>, client: OkHttpClient
-              ): List<QualityOption> {
+              // Parallel 5-second fast probe (eliminates quality fetch lag)
+              suspend fun probeSniffed(
+                  pageTitle: String?, pageUrl: String, list: List<SniffedMedia>, baseClient: OkHttpClient
+              ): List<QualityOption> = coroutineScope {
+                  val fastClient = baseClient.newBuilder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(5, TimeUnit.SECONDS).build()
                   val title = cleanTitle(pageTitle, pageUrl)
-                  val out = mutableListOf<QualityOption>()
-                  val seenUrls = mutableSetOf<String>()
+                  val unique = list.distinctBy { it.url }.take(15)
 
-                  for (m in list) {
-                      if (!seenUrls.add(m.url)) continue
-                      if (m.url.contains(".m3u8", true)) {
-                          var addedVariants = false
-                          try {
-                              val r = Request.Builder().url(m.url).apply { m.headers.forEach { (k, v) -> header(k, v) } }.build()
-                              val txt = client.newCall(r).execute().use { if (it.isSuccessful) it.body!!.string() else "" }
-                              if (txt.contains("#EXT-X-STREAM-INF")) {
-                                  val base = m.url.toHttpUrl()
-                                  val lines = txt.lines().map { it.trim() }
-                                  for (i in lines.indices) if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
-                                      val res = Regex("RESOLUTION=(\\d+x\\d+)").find(lines[i])?.groupValues?.get(1) ?: "Auto"
-                                      val h = res.substringAfter("x").toIntOrNull() ?: 720
-                                      val bw = Regex("BANDWIDTH=(\\d+)").find(lines[i])?.groupValues?.get(1)?.toLongOrNull()?.div(1000) ?: 0
-                                      val next = lines.drop(i + 1).firstOrNull { it.isNotEmpty() && !it.startsWith("#") } ?: continue
-                                      val vUrl = base.resolve(next).toString()
-                                      if (seenUrls.add(vUrl)) {
-                                          out += QualityOption(title, "${h}p ($res) | HLS ${bw}k [${m.sourceTag}]", h, vUrl, null, true, m.headers)
-                                          addedVariants = true
+                  val nested = unique.map { m ->
+                      async(Dispatchers.IO) {
+                          val resList = mutableListOf<QualityOption>()
+                          if (m.url.contains(".m3u8", true)) {
+                              var added = false
+                              try {
+                                  val r = Request.Builder().url(m.url).apply { m.headers.forEach { (k, v) -> header(k, v) } }.build()
+                                  val txt = fastClient.newCall(r).execute().use { if (it.isSuccessful) it.body!!.string() else "" }
+                                  if (txt.contains("#EXT-X-STREAM-INF")) {
+                                      val base = m.url.toHttpUrl()
+                                      val lines = txt.lines().map { it.trim() }
+                                      for (i in lines.indices) if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
+                                          val res = Regex("RESOLUTION=(\\d+x\\d+)").find(lines[i])?.groupValues?.get(1) ?: "Auto"
+                                          val h = res.substringAfter("x").toIntOrNull() ?: 720
+                                          val bw = Regex("BANDWIDTH=(\\d+)").find(lines[i])?.groupValues?.get(1)?.toLongOrNull()?.div(1000) ?: 0
+                                          val next = lines.drop(i + 1).firstOrNull { it.isNotEmpty() && !it.startsWith("#") } ?: continue
+                                          resList += QualityOption(title, "${h}p ($res) | HLS ${bw}k [${m.sourceTag}]", h, base.resolve(next).toString(), null, true, m.headers)
+                                          added = true
                                       }
                                   }
+                              } catch (_: Exception) {}
+                              if (!added) resList += QualityOption(title, "HLS Stream | [${m.sourceTag}] ${m.url.substringBefore("?").takeLast(24)}", 500, m.url, null, true, m.headers)
+                          } else {
+                              var len = -1L; var ranged = false
+                              try {
+                                  val r = Request.Builder().url(m.url).head().apply { m.headers.forEach { (k, v) -> header(k, v) } }.build()
+                                  fastClient.newCall(r).execute().use { resp ->
+                                      len = resp.header("Content-Length")?.toLongOrNull() ?: -1L
+                                      ranged = resp.header("Accept-Ranges")?.contains("bytes", true) == true
+                                  }
+                              } catch (_: Exception) {}
+                              if (len !in 1..200_000) {
+                                  val mb = if (len > 0) "${len / 1048576}MB" else "?MB"
+                                  resList += QualityOption(title, "MP4 | $mb | ${if (ranged) "64T-Turbo" else "Stream"} [${m.sourceTag}]", 600, m.url, null, false, m.headers, ranged)
                               }
-                          } catch (_: Exception) {}
-                          if (!addedVariants) {
-                              out += QualityOption(title, "HLS Stream | [${m.sourceTag}] ${m.url.substringBefore("?").takeLast(25)}", 500, m.url, null, true, m.headers)
                           }
-                      } else {
-                          var len = -1L; var ranged = false
-                          try {
-                              val r = Request.Builder().url(m.url).head().apply { m.headers.forEach { (k, v) -> header(k, v) } }.build()
-                              client.newCall(r).execute().use { resp ->
-                                  len = resp.header("Content-Length")?.toLongOrNull() ?: -1L
-                                  ranged = resp.header("Accept-Ranges")?.contains("bytes", true) == true
-                              }
-                          } catch (_: Exception) {}
-                          if (len in 1..200_000) continue // skip tiny ad/beacon files
-                          val mb = if (len > 0) "${len / 1048576}MB" else "?MB"
-                          out += QualityOption(title, "MP4 | $mb | ${if (ranged) "64T-Turbo" else "Stream"} [${m.sourceTag}]", 600, m.url, null, false, m.headers, ranged)
+                          resList
                       }
-                  }
-                  return out.sortedByDescending { it.sortHeight }
+                  }.awaitAll().flatten()
+
+                  nested.distinctBy { it.videoUrl }.sortedByDescending { it.sortHeight }
               }
           }
           EOF
@@ -773,64 +798,161 @@ jobs:
           package com.nova.dm
 
           import android.app.PictureInPictureParams
+          import android.graphics.Color
           import android.media.AudioManager
           import android.os.Build
           import android.os.Bundle
           import android.util.Rational
           import android.view.*
-          import android.widget.Toast
+          import android.widget.Button
+          import android.widget.FrameLayout
+          import android.widget.LinearLayout
+          import android.widget.TextView
+          import androidx.annotation.OptIn
           import androidx.appcompat.app.AppCompatActivity
-          import androidx.media3.common.MediaItem
-          import androidx.media3.common.PlaybackParameters
+          import androidx.core.view.WindowCompat
+          import androidx.core.view.WindowInsetsCompat
+          import androidx.core.view.WindowInsetsControllerCompat
+          import androidx.media3.common.*
+          import androidx.media3.common.util.UnstableApi
+          import androidx.media3.datasource.DefaultDataSource
+          import androidx.media3.datasource.okhttp.OkHttpDataSource
           import androidx.media3.exoplayer.ExoPlayer
+          import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
           import androidx.media3.ui.PlayerView
+          import okhttp3.OkHttpClient
+          import java.util.concurrent.TimeUnit
           import kotlin.math.abs
 
+          @OptIn(UnstableApi::class)
           class PlayerActivity : AppCompatActivity() {
               private lateinit var player: ExoPlayer
               private lateinit var pv: PlayerView
+              private lateinit var hud: TextView
+              private var locked = false
               private var sIdx = 1
               private val speeds = floatArrayOf(0.5f, 1.0f, 1.25f, 1.5f, 2.0f)
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  pv = PlayerView(this).apply { layoutParams = ViewGroup.LayoutParams(-1, -1); setShowSubtitleButton(true) }
-                  setContentView(pv)
-                  val path = intent.getStringExtra("path") ?: return finish()
-                  player = ExoPlayer.Builder(this).build().also {
-                      pv.player = it; it.setMediaItem(MediaItem.fromUri(path)); it.prepare(); it.playWhenReady = true
+                  WindowCompat.setDecorFitsSystemWindows(window, false)
+                  WindowInsetsControllerCompat(window, window.decorView).apply {
+                      hide(WindowInsetsCompat.Type.systemBars())
+                      systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                   }
+
+                  val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
+                  pv = PlayerView(this).apply {
+                      layoutParams = FrameLayout.LayoutParams(-1, -1)
+                      setShowSubtitleButton(true)
+                  }
+                  hud = TextView(this).apply {
+                      setTextColor(Color.WHITE); setBackgroundColor(0x88000000.toInt())
+                      setPadding(24, 12, 24, 12); textSize = 15f; visibility = View.GONE
+                      layoutParams = FrameLayout.LayoutParams(-2, -2, Gravity.CENTER)
+                  }
+                  val topBar = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL; setPadding(16, 24, 16, 8)
+                      layoutParams = FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END)
+                  }
+                  val btnSpeed = Button(this).apply { text = "1.0x"; textSize = 11f }
+                  val btnLock = Button(this).apply { text = "Lock"; textSize = 11f }
+                  topBar.addView(btnSpeed); topBar.addView(btnLock)
+                  root.addView(pv); root.addView(hud); root.addView(topBar)
+                  setContentView(root)
+
+                  val uriStr = intent.getStringExtra("path") ?: return finish()
+                  val isHls = intent.getBooleanExtra("isHls", false)
+                  @Suppress("UNCHECKED_CAST")
+                  val hdrs = (intent.getSerializableExtra("headers") as? HashMap<String, String>) ?: hashMapOf()
+
+                  val client = OkHttpClient.Builder().connectTimeout(25, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).build()
+                  val okFactory = OkHttpDataSource.Factory(client).setDefaultRequestProperties(hdrs)
+                  val dsFactory = DefaultDataSource.Factory(this, okFactory)
+
+                  player = ExoPlayer.Builder(this)
+                      .setMediaSourceFactory(DefaultMediaSourceFactory(dsFactory))
+                      .build().also { p ->
+                          pv.player = p
+                          val item = MediaItem.Builder().setUri(uriStr).apply {
+                              if (isHls || uriStr.contains(".m3u8", true)) setMimeType(MimeTypes.APPLICATION_M3U8)
+                          }.build()
+                          p.setMediaItem(item)
+                          p.addListener(object : Player.Listener {
+                              override fun onPlayerError(error: PlaybackException) { showHud("Error: ${error.errorCodeName}") }
+                          })
+                          p.prepare(); p.playWhenReady = true
+                      }
+
+                  btnSpeed.setOnClickListener {
+                      sIdx = (sIdx + 1) % speeds.size
+                      player.playbackParameters = PlaybackParameters(speeds[sIdx])
+                      btnSpeed.text = "${speeds[sIdx]}x"
+                      showHud("Speed ${speeds[sIdx]}x")
+                  }
+                  btnLock.setOnClickListener {
+                      locked = !locked
+                      btnLock.text = if (locked) "Unlock" else "Lock"
+                      pv.useController = !locked
+                      btnSpeed.visibility = if (locked) View.GONE else View.VISIBLE
+                      showHud(if (locked) "Locked" else "Unlocked")
+                  }
+
                   val am = getSystemService(AUDIO_SERVICE) as AudioManager
+                  var holdSpeed = false
                   val gd = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
                       override fun onDown(e: MotionEvent) = true
+                      override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                          if (!locked) { if (pv.isControllerFullyVisible) pv.hideController() else pv.showController() }
+                          return true
+                      }
                       override fun onDoubleTap(e: MotionEvent): Boolean {
+                          if (locked) return true
                           val d = if (e.x < pv.width / 2f) -10_000L else 10_000L
                           player.seekTo((player.currentPosition + d).coerceAtLeast(0))
-                          Toast.makeText(this@PlayerActivity, if (d > 0) "+10s" else "-10s", Toast.LENGTH_SHORT).show()
+                          showHud(if (d > 0) ">> +10s" else "<< -10s")
                           return true
                       }
                       override fun onLongPress(e: MotionEvent) {
-                          sIdx = (sIdx + 1) % speeds.size
-                          player.playbackParameters = PlaybackParameters(speeds[sIdx])
-                          Toast.makeText(this@PlayerActivity, "${speeds[sIdx]}x", Toast.LENGTH_SHORT).show()
+                          if (locked) return
+                          holdSpeed = true
+                          player.playbackParameters = PlaybackParameters(2.0f)
+                          showHud("2.0x >>")
                       }
                       override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
-                          if (abs(dy) <= abs(dx)) return false
+                          if (locked || abs(dy) <= abs(dx)) return false
                           val pct = (dy / pv.height) * 1.5f
                           if (e2.x < pv.width / 2f) {
                               val lp = window.attributes
-                              lp.screenBrightness = (if (lp.screenBrightness < 0) 0.5f else lp.screenBrightness + pct).coerceIn(0.05f, 1f)
-                              window.attributes = lp
+                              val next = (if (lp.screenBrightness < 0) 0.5f else lp.screenBrightness + pct).coerceIn(0.05f, 1f)
+                              lp.screenBrightness = next; window.attributes = lp
+                              showHud("Bright ${(next * 100).toInt()}%")
                           } else {
                               val mx = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
                               val cur = am.getStreamVolume(AudioManager.STREAM_MUSIC)
-                              am.setStreamVolume(AudioManager.STREAM_MUSIC, (cur + (pct * mx).toInt()).coerceIn(0, mx), AudioManager.FLAG_SHOW_UI)
+                              val nv = (cur + (pct * mx).toInt()).coerceIn(0, mx)
+                              am.setStreamVolume(AudioManager.STREAM_MUSIC, nv, 0)
+                              showHud("Vol ${(nv * 100 / maxOf(1, mx))}%")
                           }
                           return true
                       }
                   })
-                  pv.setOnTouchListener { _, ev -> gd.onTouchEvent(ev) }
+                  pv.setOnTouchListener { _, ev ->
+                      if (holdSpeed && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL)) {
+                          holdSpeed = false
+                          player.playbackParameters = PlaybackParameters(speeds[sIdx])
+                      }
+                      gd.onTouchEvent(ev)
+                  }
               }
+
+              private fun showHud(msg: String) {
+                  hud.text = msg; hud.visibility = View.VISIBLE
+                  hud.removeCallbacks(hideHudRunnable)
+                  hud.postDelayed(hideHudRunnable, 900)
+              }
+              private val hideHudRunnable = Runnable { hud.visibility = View.GONE }
+
               override fun onUserLeaveHint() {
                   if (Build.VERSION.SDK_INT >= 26 && player.isPlaying) {
                       enterPictureInPictureMode(PictureInPictureParams.Builder().setAspectRatio(Rational(16, 9)).build())
@@ -897,7 +1019,8 @@ jobs:
                   b = ActivityMainBinding.inflate(layoutInflater); setContentView(b.root)
                   vault = VaultManager(this)
 
-                  b.webView.setupBrowserAndSniffer(b.pageProgress, b.fullscreenContainer, b.browserRoot,
+                  val exitFullscreen = b.webView.setupBrowserAndSniffer(
+                      b.pageProgress, b.fullscreenContainer, b.browserRoot,
                       onUrlChange = { u -> runOnUiThread { if (!b.urlInput.hasFocus()) b.urlInput.setText(u) } },
                       onMediaFound = { m ->
                           if (caught.putIfAbsent(m.url, m) == null) runOnUiThread { b.btnSniffed.text = "Qualities(${caught.size})" }
@@ -923,7 +1046,7 @@ jobs:
                   }
                   b.btnGo.setOnClickListener { loadInput() }
                   b.urlInput.setOnEditorActionListener { _, id, _ -> if (id == EditorInfo.IME_ACTION_GO) { loadInput(); true } else false }
-                  b.btnBack.setOnClickListener { if (b.webView.canGoBack()) b.webView.goBack() }
+                  b.btnBack.setOnClickListener { if (!exitFullscreen() && b.webView.canGoBack()) b.webView.goBack() }
                   b.btnFwd.setOnClickListener { if (b.webView.canGoForward()) b.webView.goForward() }
                   b.btnReload.setOnClickListener { b.webView.reload() }
 
@@ -939,7 +1062,7 @@ jobs:
                   }
                   b.btnAd.setOnClickListener {
                       AdBlockEngine.enabled = !AdBlockEngine.enabled
-                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:ON" else "Ad:OFF"
+                      b.btnAd.text = if (AdBlockEngine.enabled) "Ad:MAX" else "Ad:OFF"
                   }
                   b.btnSniffed.setOnClickListener {
                       openQualityTable(b.webView.url ?: b.urlInput.text.toString().trim(), b.webView.title)
@@ -954,12 +1077,15 @@ jobs:
                   b.btnVault.setOnClickListener { showVault() }
 
                   onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-                      override fun handleOnBackPressed() { if (b.webView.canGoBack()) b.webView.goBack() else finish() }
+                      override fun handleOnBackPressed() {
+                          if (exitFullscreen()) return
+                          if (b.webView.canGoBack()) b.webView.goBack() else finish()
+                      }
                   })
               }
 
               private fun openQualityTable(pageUrl: String, pageTitle: String?) = lifecycleScope.launch {
-                  b.statusText.text = "Fetching qualities..."
+                  b.statusText.text = "Fast-probing qualities..."
                   var ytErr: String? = null
                   val options = withContext(Dispatchers.IO) {
                       if (pageUrl.contains("youtube.com") || pageUrl.contains("youtu.be")) {
@@ -976,18 +1102,32 @@ jobs:
                       Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                       return@launch
                   }
-                  b.statusText.text = "${options.size} qualities found"
+                  b.statusText.text = "${options.size} qualities ready"
                   AlertDialog.Builder(this@MainActivity)
                       .setTitle("${options.first().title.take(35)} (${options.size})")
                       .setItems(options.mapIndexed { idx, o -> "${idx + 1}. ${o.label}" }.toTypedArray()) { _, i ->
-                          startTurboDownload(options[i])
+                          val opt = options[i]
+                          AlertDialog.Builder(this@MainActivity)
+                              .setTitle(opt.label)
+                              .setPositiveButton("Stream Now") { _, _ -> streamInPlayer(opt) }
+                              .setNeutralButton("Save to Vault") { _, _ -> startTurboDownload(opt, false) }
+                              .setNegativeButton("Direct GDrive") { _, _ -> startTurboDownload(opt, true) }
+                              .show()
                       }.show()
               }
 
-              private fun startTurboDownload(opt: QualityOption) = lifecycleScope.launch(Dispatchers.IO) {
-                  val toDrive = b.switchGDrive.isChecked; val tok = driveToken
+              private fun streamInPlayer(opt: QualityOption) {
+                  startActivity(Intent(this, PlayerActivity::class.java).apply {
+                      putExtra("path", opt.videoUrl)
+                      putExtra("isHls", opt.isHls)
+                      putExtra("headers", HashMap(opt.headers))
+                  })
+              }
+
+              private fun startTurboDownload(opt: QualityOption, toDrive: Boolean) = lifecycleScope.launch(Dispatchers.IO) {
+                  val tok = driveToken
                   if (toDrive && tok == null) {
-                      withContext(Dispatchers.Main) { Toast.makeText(this@MainActivity, "Link Drive first", Toast.LENGTH_SHORT).show() }
+                      withContext(Dispatchers.Main) { Toast.makeText(this@MainActivity, "Tap 'Link Drive' first", Toast.LENGTH_SHORT).show() }
                       return@launch
                   }
                   val safeName = opt.title.replace(Regex("[^a-zA-Z0-9._ -]"), "_").trim().take(42).ifEmpty { "Video" }
@@ -1031,7 +1171,7 @@ jobs:
                           }
                           up?.finish(); fos?.close()
                       }
-                      withContext(Dispatchers.Main) { b.statusText.text = "Saved: $name" }
+                      withContext(Dispatchers.Main) { b.statusText.text = if (toDrive) "GDrive Done: $name" else "Saved: $name" }
                   } catch (t: Throwable) {
                       withContext(Dispatchers.Main) { b.statusText.text = "Err: ${t.message}" }
                   }
@@ -1090,8 +1230,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="v3.1.${{ github.run_number }}.${{ github.run_attempt }}"
+          TAG="v3.2.${{ github.run_number }}.${{ github.run_attempt }}"
           gh release create "$TAG" dist/*.apk \
             --title "PWdm Turbo $TAG" \
-            --notes "Fixed browser site loading + lag + real video titles + NewPipeExtractor v0.27.1" \
+            --notes "Live Online Streaming (.m3u8/.mp4/YT) + Parallel Fast Prober + Improved Browser & AdBlock" \
             --latest
