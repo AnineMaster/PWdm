@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONLINE PLAY</title>
+  <style>
+    :root {
+      --bg: #07070a;
+      --surface: rgba(18, 18, 25, 0.74);
+      --surface-hover: rgba(34, 34, 46, 0.92);
+      --text: #f4f4f6;
+      --muted: #8b8b9e;
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --accent: #6366f1;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --glow-1: rgba(99, 102, 241, 0.28);
+      --glow-2: rgba(236, 72, 153, 0.22);
+      --shimmer-a: #0f0f15;
+      --shimmer-b: #1c1c26;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    body.light {
+      --bg: #eef1f6;
+      --surface: rgba(255, 255, 255, 0.8);
+      --surface-hover: rgba(255, 255, 255, 0.98);
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(15, 23, 42, 0.09);
+      --border-strong: rgba(15, 23, 42, 0.16);
+      --glow-1: rgba(99, 102, 241, 0.18);
+      --glow-2: rgba(14, 165, 233, 0.18);
+      --shimmer-a: #e2e8f0;
+      --shimmer-b: #f8fafc;
+      --shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 20% 15%, var(--glow-1), transparent 45%),
+        radial-gradient(circle at 80% 85%, var(--glow-2), transparent 45%),
+        var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      overflow-x: hidden;
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .shell.theater { max-width: 1240px; }
+
+    .hud {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .hud-top { animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+    .hud-bottom { animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both; }
+
+    .spec-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 31px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      transition: border-color 0.25s ease, background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    }
+    .pill strong { color: var(--text); font-weight: 600; }
+    .pill:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+
+    button.pill { cursor: pointer; color: var(--text); }
+    button.pill:hover { background: var(--surface-hover); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
+    button.pill:active { transform: scale(0.96); }
+
+    .icon-btn { width: 31px; padding: 0; justify-content: center; }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok);
+      animation: pulseDot 1.8s infinite ease-in-out;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); animation: none; }
+    .dot.bad { background: var(--bad); box-shadow: 0 0 8px var(--bad); animation: none; }
+    .dot.loading { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+    .player-stage {
+      position: relative;
+      width: 100%;
+      border-radius: 18px;
+      padding: 1px;
+      background: linear-gradient(125deg, var(--border-strong), transparent 40%, var(--border-strong));
+      animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      inset: -12px;
+      border-radius: 26px;
+      background: linear-gradient(120deg, var(--glow-1), var(--glow-2), var(--glow-1));
+      background-size: 200% 200%;
+      filter: blur(28px);
+      z-index: -1;
+      opacity: 0.85;
+      animation: moveGlow 7s ease-in-out infinite;
+    }
+
+    .player {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 17px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    #frameMount { width: 100%; height: 100%; }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .loader {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(110deg, var(--shimmer-a) 25%, var(--shimmer-b) 45%, var(--shimmer-a) 65%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s linear infinite;
+      transition: opacity 0.4s ease;
+    }
+    .loader.hide { opacity: 0; }
+
+    .spinner-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      animation: spin 0.85s linear infinite;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .spin-once { animation: spin 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes moveGlow {
+      0%, 100% { background-position: 0% 50%; transform: scale(0.99); }
+      50% { background-position: 100% 50%; transform: scale(1.015); }
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.6; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="shell" id="shell">
+    <!-- TOP REAL SPECS & CONTROLS -->
+    <div class="hud hud-top">
+      <div class="spec-group">
+        <span class="pill">
+          <span class="dot loading" id="stateDot"></span>
+          <strong id="stateSpec">LOADING</strong>
+        </span>
+        <span class="pill">LOAD <strong id="loadSpec">0 ms</strong></span>
+        <span class="pill">TIME <strong id="timeSpec">00:00</strong></span>
+      </div>
+
+      <div class="spec-group">
+        <button class="pill" id="shieldBtn" onclick="toggleRedirectBlock()">
+          <span class="dot" id="shieldDot"></span>
+          <span id="shieldText">SHIELD ON</span>
+        </button>
+        <button class="pill icon-btn" onclick="reloadPlayer()" title="Reload">
+          <svg id="reloadIcon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        </button>
+        <button class="pill icon-btn" onclick="toggleTheater()" title="Theater">
+          <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M7 15h10"/></svg>
+        </button>
+        <button class="pill icon-btn" id="themeBtn" onclick="toggleTheme()" title="Theme">
+          <svg id="themeIcon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIDEO STAGE -->
+    <div class="player-stage">
+      <div class="ambient-glow"></div>
+      <div class="player" id="playerBox">
+        <div class="loader" id="loader">
+          <div class="spinner-ring"></div>
+        </div>
+        <div id="frameMount"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM REAL SPECS -->
+    <div class="hud hud-bottom">
+      <div class="spec-group">
+        <span class="pill">VIEW <strong id="viewSpec">0 × 0</strong></span>
+        <span class="pill">RATIO <strong>16:9</strong></span>
+        <span class="pill">NET <strong id="netSpec">ONLINE</strong></span>
+      </div>
+
+      <div class="spec-group">
+        <span class="pill">LAYOUT <strong id="layoutSpec">STANDARD</strong></span>
+        <span class="pill">SANDBOX <strong id="sandboxSpec">ACTIVE</strong></span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const VIDEO_URL = "https://player.abyssplayer.com/9PNHF9wTQ";
+    let blockRedirects = true;
+    let watchTimer = null;
+    let watchSec = 0;
+
+    const $ = (id) => document.getElementById(id);
+
+    function formatTime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      const mm = String(m).padStart(2, "0");
+      const ss = String(s).padStart(2, "0");
+      return h > 0 ? `${String(h).padStart(2, "0")}:${mm}:${ss}` : `${mm}:${ss}`;
+    }
+
+    function startTimer() {
+      clearInterval(watchTimer);
+      watchSec = 0;
+      $("timeSpec").textContent = "00:00";
+      watchTimer = setInterval(() => {
+        if (document.hidden) return;
+        watchSec++;
+        $("timeSpec").textContent = formatTime(watchSec);
+      }, 1000);
+    }
+
+    // Live player frame dimensions
+    new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        const h = Math.round(entry.contentRect.height);
+        $("viewSpec").textContent = `${w} × ${h}`;
+      }
+    }).observe($("playerBox"));
+
+    // Live network status
+    function updateNet() {
+      if (!navigator.onLine) {
+        $("netSpec").textContent = "OFFLINE";
+        $("stateDot").className = "dot bad";
+        $("stateSpec").textContent = "OFFLINE";
+        return;
+      }
+
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (conn) {
+        const parts = [];
+        if (conn.effectiveType) parts.push(conn.effectiveType.toUpperCase());
+        if (conn.downlink) parts.push(`${conn.downlink} Mbps`);
+        $("netSpec").textContent = parts.join(" · ") || "ONLINE";
+      } else {
+        $("netSpec").textContent = "ONLINE";
+      }
+
+      if ($("stateSpec").textContent === "OFFLINE") {
+        $("stateDot").className = "dot";
+        $("stateSpec").textContent = "READY";
+      }
+    }
+
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    conn?.addEventListener?.("change", updateNet);
+    window.addEventListener("online", updateNet);
+    window.addEventListener("offline", updateNet);
+
+    function loadPlayer() {
+      const mount = $("frameMount");
+      const loader = $("loader");
+      const t0 = performance.now();
+
+      clearInterval(watchTimer);
+      $("timeSpec").textContent = "00:00";
+      $("loadSpec").textContent = "0 ms";
+      $("stateDot").className = "dot loading";
+      $("stateSpec").textContent = "LOADING";
+      loader.classList.remove("hide");
+      mount.innerHTML = "";
+
+      const iframe = document.createElement("iframe");
+      iframe.src = VIDEO_URL;
+      iframe.allow = "autoplay; fullscreen; encrypted-media; picture-in-picture";
+      iframe.allowFullscreen = true;
+      iframe.referrerPolicy = "no-referrer";
+      if (blockRedirects) {
+        iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-presentation";
+      }
+
+      iframe.onload = () => {
+        $("loadSpec").textContent = `${Math.round(performance.now() - t0)} ms`;
+        loader.classList.add("hide");
+        $("stateDot").className = navigator.onLine ? "dot" : "dot bad";
+        $("stateSpec").textContent = navigator.onLine ? "READY" : "OFFLINE";
+        startTimer();
+      };
+
+      mount.appendChild(iframe);
+    }
+
+    function reloadPlayer() {
+      const icon = $("reloadIcon");
+      icon.classList.remove("spin-once");
+      void icon.offsetWidth;
+      icon.classList.add("spin-once");
+      loadPlayer();
+    }
+
+    function toggleRedirectBlock() {
+      blockRedirects = !blockRedirects;
+      $("shieldText").textContent = blockRedirects ? "SHIELD ON" : "SHIELD OFF";
+      $("sandboxSpec").textContent = blockRedirects ? "ACTIVE" : "BYPASS";
+      $("shieldDot").classList.toggle("warn", !blockRedirects);
+      loadPlayer();
+    }
+
+    function toggleTheater() {
+      const isTheater = $("shell").classList.toggle("theater");
+      $("layoutSpec").textContent = isTheater ? "THEATER" : "STANDARD";
+    }
+
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle("light");
+      $("themeIcon").innerHTML = isLight
+        ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+        : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+    }
+
+    updateNet();
+    loadPlayer();
+  </script>
+</body>
+</html>
